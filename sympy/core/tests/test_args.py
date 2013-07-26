@@ -1663,8 +1663,13 @@ def test_sympy__liealgebras__cartan_type__Standard_Cartan():
 
 @XFAIL
 def test_sympy__liealgebras__type_a__TypeA():
-    from sympy.liealgebras.type_A import CartanType
-    assert _test_args(CartanType(2))
+    from sympy.liealgebras.type_a import TypeA
+    assert _test_args(TypeA(2))
+
+@XFAIL
+def test_sympy__liealgebras__type_b__TypeB():
+    from sympy.liealgebras.type_b import TypeB
+    assert _test_args(TypeB(4))
 
 def test_sympy__logic__boolalg__And():
     from sympy.logic.boolalg import And
@@ -2020,6 +2025,14 @@ def test_sympy__physics__quantum__cg__Wigner6j():
 def test_sympy__physics__quantum__cg__Wigner9j():
     from sympy.physics.quantum.cg import Wigner9j
     assert _test_args(Wigner9j(2, 1, 1, S(3)/2, S(1)/2, 1, S(1)/2, S(1)/2, 0))
+
+def test_sympy__physics__quantum__circuitplot__Mz():
+    from sympy.physics.quantum.circuitplot import Mz
+    assert _test_args(Mz(0))
+
+def test_sympy__physics__quantum__circuitplot__Mx():
+    from sympy.physics.quantum.circuitplot import Mx
+    assert _test_args(Mx(0))
 
 def test_sympy__physics__quantum__commutator__Commutator():
     from sympy.physics.quantum.commutator import Commutator
