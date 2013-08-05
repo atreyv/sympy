@@ -203,6 +203,8 @@ class Pow(Expr):
         if not c1 and e.is_nonnegative:  # rat**nonneg
             return False
         if c1 and c2:  # int**int
+            if b is S.NegativeOne:
+                return True
             if e.is_nonnegative or e.is_positive:
                 return True
             if self.exp.is_negative:
@@ -260,6 +262,8 @@ class Pow(Expr):
             if self.exp.is_positive:
                 return self.base.is_odd
             elif self.exp.is_nonnegative and self.base.is_odd:
+                return True
+            elif self.base is S.NegativeOne:
                 return True
 
     def _eval_is_bounded(self):
@@ -1016,7 +1020,7 @@ class Pow(Expr):
             l = []
             g = None
             for i in xrange(n + 2):
-                g = self.taylor_term(i, z, g)
+                g = self._taylor_term(i, z, g)
                 g = g.nseries(x, n=n, logx=logx)
                 l.append(g)
             r = Add(*l)
@@ -1028,10 +1032,7 @@ class Pow(Expr):
         return C.exp(self.exp * C.log(self.base)).as_leading_term(x)
 
     @cacheit
-    def taylor_term(self, n, x, *previous_terms):  # of (1+x)**e
-        if n < 0:
-            return S.Zero
-        x = _sympify(x)
+    def _taylor_term(self, n, x, *previous_terms): # of (1+x)**e
         return C.binomial(self.exp, n) * self.func(x, n)
 
     def _sage_(self):
