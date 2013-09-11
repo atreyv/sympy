@@ -1974,6 +1974,11 @@ def test_sympy__matrices__expressions__factorizations__SofSVD():
 def test_sympy__matrices__expressions__factorizations__Factorization():
     pass
 
+def test_sympy__physics__mechanics__essential__CoordinateSym():
+    from sympy.physics.mechanics import CoordinateSym
+    from sympy.physics.mechanics import ReferenceFrame
+    assert _test_args(CoordinateSym('R_x', ReferenceFrame('R'), 0))
+
 def test_sympy__physics__gaussopt__BeamParameter():
     from sympy.physics.gaussopt import BeamParameter
     assert _test_args(BeamParameter(530e-9, 1, w=1e-3))
@@ -2764,6 +2769,15 @@ def test_sympy__tensor__indexed__IndexedBase():
     assert _test_args(IndexedBase('A', 1))
     assert _test_args(IndexedBase('A')[0, 1])
 
+
+@XFAIL
+def test_sympy__physics__hep__gamma_matrices__GammaMatrixHead():
+    # This test fails, this class can be reconstructed from the *args
+    # of an instance using `TensorHead(*args)`
+    from sympy.physics.hep.gamma_matrices import GammaMatrixHead, Lorentz
+    from sympy.tensor.tensor import tensor_indices
+    i = tensor_indices('i', Lorentz)
+    assert _test_args(GammaMatrixHead())
 
 def test_sympy__tensor__tensor__TensorIndexType():
     from sympy.tensor.tensor import TensorIndexType
