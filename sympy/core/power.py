@@ -866,8 +866,17 @@ class Pow(Expr):
                 if cf < 0:
                     cf = S.One/abs(cf)
 
+                try:
+                    dn = C.Order(1/prefactor, x).getn()
+                    if dn and dn < 0:
+                        pass
+                    else:
+                        dn = 0
+                except NotImplementedError:
+                    dn = 0
+
                 terms = [1/prefactor]
-                for m in xrange(1, ceiling(n/l*cf)):
+                for m in xrange(1, ceiling((n - dn)/l*cf)):
                     new_term = terms[-1]*(-rest)
                     if new_term.is_Pow:
                         new_term = new_term._eval_expand_multinomial(
@@ -882,7 +891,7 @@ class Pow(Expr):
                 # example:
                 # sin(x)**(-4) = 1/( sin(x)**4) = ...
                 # and expand the denominator:
-                nuse, denominator = n, O(1)
+                nuse, denominator = n, O(1, x)
                 while denominator.is_Order:
                     denominator = (b**(-e))._eval_nseries(x, n=nuse, logx=logx)
                     nuse += 1
@@ -981,7 +990,7 @@ class Pow(Expr):
                         arg = c*arg.expr
                     res.append(arg)
                 bs = Add(*res)
-                rv = (bs**e).series(x).subs(c, O(1))
+                rv = (bs**e).series(x).subs(c, O(1, x))
                 rv += order
                 return rv
 
