@@ -181,11 +181,11 @@ class Equality(Relational):
         rhs = _sympify(rhs)
         # If expressions have the same structure, they must be equal.
         if lhs == rhs:
-            return True
+            return S.true
         # If one side is real and the other complex, they must be unequal.
         elif (lhs.is_real != rhs.is_real and
                 None not in (lhs.is_real, rhs.is_real)):
-            return False
+            return S.false
         # Otherwise, see if the difference can be evaluated.
         r = cls._eval_sides(lhs, rhs)
         if r is not None:
@@ -195,7 +195,7 @@ class Equality(Relational):
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs == rhs
+        return _sympify(lhs == rhs)
 
 Eq = Equality
 
@@ -231,12 +231,12 @@ class Unequality(Relational):
         rhs = _sympify(rhs)
         is_equal = Equality(lhs, rhs)
         if is_equal == True or is_equal == False:
-            return not is_equal
+            return ~is_equal
         return Relational.__new__(cls, lhs, rhs, **assumptions)
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs != rhs
+        return _sympify(lhs != rhs)
 
 Ne = Unequality
 
@@ -528,8 +528,8 @@ class GreaterThan(_Greater):
 
            In Python, there is no way to override the ``and`` operator, or to
            control how it short circuits, so it is impossible to make something
-           like ``x > y > z`` work.  There is an open PEP to change this,
-           :pep:`335`, but until that is implemented, this cannot be made to work.
+           like ``x > y > z`` work.  There was a PEP to change this,
+           :pep:`335`, but it was officially closed in March, 2012.
 
     .. [2] For more information, see these two bug reports:
 
@@ -546,7 +546,7 @@ class GreaterThan(_Greater):
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs >= rhs
+        return _sympify(lhs >= rhs)
 
 Ge = GreaterThan
 
@@ -559,7 +559,7 @@ class LessThan(_Less):
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs <= rhs
+        return _sympify(lhs <= rhs)
 
 Le = LessThan
 
@@ -572,7 +572,7 @@ class StrictGreaterThan(_Greater):
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs > rhs
+        return _sympify(lhs > rhs)
 
 Gt = StrictGreaterThan
 
@@ -585,7 +585,7 @@ class StrictLessThan(_Less):
 
     @classmethod
     def _eval_relation(cls, lhs, rhs):
-        return lhs < rhs
+        return _sympify(lhs < rhs)
 
 Lt = StrictLessThan
 
