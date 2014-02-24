@@ -10,6 +10,7 @@ from sympy.geometry.entity import rotate, scale, translate
 from sympy.geometry.polygon import _asa as asa, rad, deg
 from sympy.geometry.util import idiff
 from sympy.solvers.solvers import solve
+from sympy.utilities.iterables import cartes
 from sympy.utilities.randtest import test_numerically
 from sympy.utilities.pytest import raises
 
@@ -279,6 +280,9 @@ def test_line():
     t = Symbol('t', real=True)
     assert Ray((1, 1), angle=pi/4).arbitrary_point() == \
         Point(t + 1, t + 1)
+    r8 = Ray(Point(0, 0), Point(0, 4))
+    r9 = Ray(Point(0, 1), Point(0, -1))
+    assert r8.intersection(r9) == [Segment(Point(0, 0), Point(0, 1))]
 
     s1 = Segment(p1, p2)
     s2 = Segment(p1, p1_1)
@@ -344,6 +348,7 @@ def test_line():
     assert r.distance(Point(-1, -1)) == sqrt(2)
     assert r.distance(Point(1, 1)) == 0
     assert r.distance(Point(-1, 1)) == sqrt(2)
+    assert Ray((1, 1), (2, 2)).distance(Point(1.5, 3)) == 3*sqrt(2)/4
 
 
     # Special cases of projection and intersection
@@ -1112,6 +1117,7 @@ def test_geometry_transforms():
     assert RegularPolygon((0, 0), 1, 4).scale(2, 3, (4, 5)) == \
         Polygon(Point(-2, -10), Point(-4, -7), Point(-6, -10), Point(-4, -13))
 
+
 def test_reflect():
     b = Symbol('b')
     m = Symbol('m')
@@ -1152,6 +1158,7 @@ def test_reflect():
         'Point(-0.616, 3.10)]')
     assert pent.area.equals(-rpent.area)
 
+
 def test_idiff():
     # the use of idiff in ellipse also provides coverage
     circ = x**2 + y**2 - 4
@@ -1164,3 +1171,19 @@ def test_idiff():
         explicit
     assert explicit in [sol.diff(x, 3).simplify() for sol in solve(circ, y)]
     assert idiff(x + t + y, [y, t], x) == -Derivative(t, x) - 1
+
+
+def test_gh2941():
+    def _check():
+        for f, g in cartes(*[(Line, Ray, Segment)]*2):
+          l1 = f(a, b)
+          l2 = g(c, d)
+          assert l1.intersection(l2) == l2.intersection(l1)
+    # intersect at end point
+    c, d = (-2, -2), (-2, 0)
+    a, b = (0, 0), (1, 1)
+    _check()
+    # midline intersection
+    c, d = (-2, -3), (-2, 0)
+    a, b = (0, 0), (1, 1)
+    _check()
