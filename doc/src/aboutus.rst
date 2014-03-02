@@ -311,8 +311,9 @@ want to be mentioned here, so see our repository history for a full list).
 #. Jonathan Miller: documentation
 #. Edward: update license year
 #. Rajath S: corrected iteration values in gaunt, racah, and wigner_9j
-#. Aditya Shah: bug fix
+#. Aditya Shah: bug fix, improvement to parsers
 #. Sambuddha Basu: documentation fix
+#. zeel: fixes to logic module
 
 Up-to-date list in the order of the first contribution is given in the `AUTHORS
 <https://github.com/sympy/sympy/blob/master/AUTHORS>`_ file.
