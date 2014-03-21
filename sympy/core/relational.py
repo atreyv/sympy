@@ -33,6 +33,7 @@ class Relational(Boolean, Expr, EvalfMixin):
 
     Examples
     ========
+
     >>> from sympy import Rel
     >>> from sympy.abc import x, y
     >>> Rel(y, x+x**2, '==')
@@ -153,6 +154,7 @@ class Equality(Relational):
 
     Examples
     ========
+
     >>> from sympy import Eq
     >>> from sympy.abc import x, y
     >>> Eq(y, x+x**2)
@@ -169,6 +171,12 @@ class Equality(Relational):
     for exact structural equality between two expressions; this class
     compares expressions mathematically.
 
+    If either object defines an `_eval_Eq` method, it can be used in place of
+    the default algorithm.  If `lhs._eval_Eq(rhs)` or `rhs._eval_Eq(lhs)`
+    returns anything other than None, that return value will be substituted for
+    the Equality.  If None is returned by `_eval_Eq`, an Equality object will
+    be created as usual.
+
     """
     rel_op = '=='
 
@@ -179,6 +187,15 @@ class Equality(Relational):
     def __new__(cls, lhs, rhs=0, **assumptions):
         lhs = _sympify(lhs)
         rhs = _sympify(rhs)
+        # If one expression has an _eval_Eq, return its results.
+        if hasattr(lhs, '_eval_Eq'):
+            r = lhs._eval_Eq(rhs)
+            if r is not None:
+                return r
+        if hasattr(rhs, '_eval_Eq'):
+            r = rhs._eval_Eq(lhs)
+            if r is not None:
+                return r
         # If expressions have the same structure, they must be equal.
         if lhs == rhs:
             return S.true
@@ -210,16 +227,24 @@ class Unequality(Relational):
 
     Examples
     ========
+
     >>> from sympy import Ne
     >>> from sympy.abc import x, y
     >>> Ne(y, x+x**2)
     y != x**2 + x
+
+    See Also
+    ========
+    Equality
 
     Notes
     =====
     This class is not the same as the != operator.  The != operator tests
     for exact structural equality between two expressions; this class
     compares expressions mathematically.
+
+    This class is effectively the inverse of Equality.  As such, it uses the
+    same algorithms, including any available `_eval_Eq` methods.
 
     """
     rel_op = '!='

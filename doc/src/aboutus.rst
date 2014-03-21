@@ -314,8 +314,9 @@ want to be mentioned here, so see our repository history for a full list).
 #. Aditya Shah: bug fix, improvement to parsers
 #. Sambuddha Basu: documentation fix
 #. zeel: fixes to logic module
-#. rajat974: improvements to integration module
+#. Rajat Aggarwal: improvements to integration module
 #. Anurag Sharma: improvements to Risch algorithm
+#. Ben Lucato: documentation fixes
 
 Up-to-date list in the order of the first contribution is given in the `AUTHORS
 <https://github.com/sympy/sympy/blob/master/AUTHORS>`_ file.
