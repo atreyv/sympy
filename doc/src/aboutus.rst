@@ -324,7 +324,13 @@ want to be mentioned here, so see our repository history for a full list).
 #. Ben Lucato: documentation fixes
 #. Kunal Arora: documentation fixes
 #. Henry Gebhardt: bugfix to ufuncify
-#. dammina: implemented continued fractions functions
+#. Dammina Sahabandu: implemented continued fractions functions
+#. Shukla: particle on a ring functions
+#. Ralph Bean: typo
+#. richierichrawr: documentation fixes
+#. John Connor: fixes to ntheory
+#. Juan Luis Cano Rodríguez: fixes to mechanics module
+#. Sahil Shekhawat: fixes to core
 
 Up-to-date list in the order of the first contribution is given in the `AUTHORS
 <https://github.com/sympy/sympy/blob/master/AUTHORS>`_ file.
