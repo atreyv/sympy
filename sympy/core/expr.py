@@ -476,17 +476,26 @@ class Expr(Basic, EvalfMixin):
         # try numerical evaluation to see if we get two different values
         failing_number = None
         if wrt == free:
-            # try 0 and 1
-            a = self.subs(list(zip(free, [0]*len(free))))
-            if a is S.NaN:
-                a = self._random(None, 0, 0, 0, 0)
+            # try 0 (for a) and 1 (for b)
+            try:
+                a = self.subs(list(zip(free, [0]*len(free))),
+                    simultaneous=True)
+                if a is S.NaN:
+                    # evaluation may succeed when substitution fails
+                    a = self._random(None, 0, 0, 0, 0)
+            except ZeroDivisionError:
+                a = None
             if a is not None and a is not S.NaN:
-                b = self.subs(list(zip(free, [1]*len(free))))
-                if b is S.NaN:
-                    b = self._random(None, 1, 0, 1, 0)
-                if b is not None and b is not S.NaN:
-                    if b.equals(a) is False:
-                        return False
+                try:
+                    b = self.subs(list(zip(free, [1]*len(free))),
+                        simultaneous=True)
+                    if b is S.NaN:
+                        # evaluation may succeed when substitution fails
+                        b = self._random(None, 1, 0, 1, 0)
+                except ZeroDivisionError:
+                    b = None
+                if b is not None and b is not S.NaN and b.equals(a) is False:
+                    return False
                 # try random real
                 b = self._random(None, -1, 0, 1, 0)
                 if b is not None and b is not S.NaN and b.equals(a) is False:
@@ -494,7 +503,7 @@ class Expr(Basic, EvalfMixin):
                 # try random complex
                 b = self._random()
                 if b is not None and b is not S.NaN:
-                    if a != b:
+                    if b.equals(a) is False:
                         return False
                     failing_number = a if a.is_number else b
 
@@ -2919,8 +2928,8 @@ class Expr(Basic, EvalfMixin):
 
     def separate(self, deep=False, force=False):
         """See the separate function in sympy.simplify"""
-        from sympy.simplify import separate
-        return separate(self, deep)
+        from sympy.core.function import expand_power_base
+        return expand_power_base(self, deep=deep, force=force)
 
     def collect(self, syms, func=None, evaluate=True, exact=False, distribute_order_term=True):
         """See the collect function in sympy.simplify"""

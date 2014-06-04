@@ -145,20 +145,6 @@ expand_denom = denom_expand
 expand_fraction = fraction_expand
 
 
-def separate(expr, deep=False, force=False):
-    """
-    Deprecated wrapper for ``expand_power_base()``.  Use that function instead.
-    """
-    from sympy.utilities.exceptions import SymPyDeprecationWarning
-    SymPyDeprecationWarning(
-        feature="separate()", useinstead="expand_power_base()", issue=6482,
-        deprecated_since_version="0.7.2", value="Note: in separate() deep "
-        "defaults to False, whereas in expand_power_base(), "
-        "deep defaults to True.",
-    ).warn()
-    return expand_power_base(sympify(expr), deep=deep, force=force)
-
-
 def collect(expr, syms, func=None, evaluate=None, exact=False, distribute_order_term=True):
     """
     Collect additive terms of an expression.
@@ -2097,7 +2083,7 @@ def posify(eq):
         return f(eq), dict([(r, s) for s, r in reps.items()])
 
     reps = dict([(s, Dummy(s.name, positive=True))
-                 for s in eq.atoms(Symbol) if s.is_positive is None])
+                 for s in eq.free_symbols if s.is_positive is None])
     eq = eq.subs(reps)
     return eq, dict([(r, s) for s, r in reps.items()])
 
@@ -2175,7 +2161,7 @@ def polarify(eq, subs=True, lift=False):
     eq = _polarify(sympify(eq), lift)
     if not subs:
         return eq
-    reps = dict([(s, Dummy(s.name, polar=True)) for s in eq.atoms(Symbol)])
+    reps = dict([(s, Dummy(s.name, polar=True)) for s in eq.free_symbols])
     eq = eq.subs(reps)
     return eq, dict([(r, s) for s, r in reps.items()])
 

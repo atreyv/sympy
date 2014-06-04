@@ -1153,8 +1153,6 @@ def test_action_verbs():
         (x**y*x**z*y**z).powsimp(combine='all')
     assert simplify(x**y*x**z*y**z) == (x**y*x**z*y**z).simplify()
     assert together(1/x + 1/y) == (1/x + 1/y).together()
-    # Not tested because it's deprecated
-    #assert separate((x*(y*z)**3)**2) == ((x*(y*z)**3)**2).separate()
     assert collect(a*x**2 + b*x**2 + a*x - b*x + c, x) == \
         (a*x**2 + b*x**2 + a*x - b*x + c).collect(x)
     assert apart(y/(y + 2)/(y + 1), y) == (y/(y + 2)/(y + 1)).apart(y)
@@ -1468,7 +1466,7 @@ def test_equals():
         assert eq.equals(0)
     assert sqrt(x).equals(0) is False
 
-    # from integrate(x*sqrt(1+2*x), x);
+    # from integrate(x*sqrt(1 + 2*x), x);
     # diff is zero only when assumptions allow
     i = 2*sqrt(2)*x**(S(5)/2)*(1 + 1/(2*x))**(S(5)/2)/5 + \
         2*sqrt(2)*x**(S(3)/2)*(1 + 1/(2*x))**(S(5)/2)/(-6 - 3/x)
@@ -1622,3 +1620,8 @@ def test_issue_6325():
     assert diff(e, t, 2) == ans
     e.diff(t, 2) == ans
     assert diff(e, t, 2, simplify=False) != ans
+
+def test_issue_7426():
+    f1 = a % c
+    f2 = x % z
+    assert f1.equals(f2) == False
