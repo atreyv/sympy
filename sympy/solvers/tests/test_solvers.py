@@ -269,7 +269,7 @@ def test_solve_rational():
 def test_solve_nonlinear():
     assert solve(x**2 - y**2, x, y) == [{x: -y}, {x: y}]
     assert solve(x**2 - y**2/exp(x), x, y) == [{x: 2*LambertW(y/2)}]
-    assert solve(x**2 - y**2/exp(x), y, x) == [{y: -x*exp(x/2)}, {y: x*exp(x/2)}]
+    assert solve(x**2 - y**2/exp(x), y, x) == [{y: -x*sqrt(exp(x))}, {y: x*sqrt(exp(x))}]
 
 
 def test_issue_7228():
@@ -1390,6 +1390,10 @@ def test_rewrite_trig():
         2*atan(S.Half - sqrt(2 + 2*sqrt(3)*I)/2 + sqrt(3)*I/2),
         2*atan(S.Half + sqrt(2 + 2*sqrt(3)*I)/2 + sqrt(3)*I/2)]
     assert solve(sinh(x) + tanh(x)) == [0, I*pi]
+
+    # issue 6157
+    assert solve(2*sin(x) - cos(x), x) == [-2*atan(2 + sqrt(5)),
+                                           -2*atan(-sqrt(5) + 2)]
 
 
 @XFAIL

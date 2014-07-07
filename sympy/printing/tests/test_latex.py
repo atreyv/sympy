@@ -455,11 +455,17 @@ def test_latex_integrals():
 
 
 def test_latex_sets():
-    for s in (FiniteSet, frozenset, set):
+    for s in (frozenset, set):
         assert latex(s([x*y, x**2])) == r"\left\{x^{2}, x y\right\}"
         assert latex(s(range(1, 6))) == r"\left\{1, 2, 3, 4, 5\right\}"
         assert latex(s(range(1, 13))) == \
             r"\left\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12\right\}"
+
+    s = FiniteSet
+    assert latex(s(*[x*y, x**2])) == r"\left\{x^{2}, x y\right\}"
+    assert latex(s(*range(1, 6))) == r"\left\{1, 2, 3, 4, 5\right\}"
+    assert latex(s(*range(1, 13))) == \
+        r"\left\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12\right\}"
 
 
 def test_latex_Range():
@@ -744,9 +750,9 @@ def test_latex_order():
 
 def test_latex_Lambda():
     assert latex(Lambda(x, x + 1)) == \
-        r"\Lambda {\left (x, x + 1 \right )}"
+        r"\left( x \mapsto x + 1 \right)"
     assert latex(Lambda((x, y), x + 1)) == \
-        r"\Lambda {\left (\begin{pmatrix}x, & y\end{pmatrix}, x + 1 \right )}"
+        r"\left( \begin{pmatrix}x, & y\end{pmatrix} \mapsto x + 1 \right)"
 
 
 def test_latex_PolyElement():
@@ -807,7 +813,7 @@ def test_latex_RootOf():
 
 def test_latex_RootSum():
     assert latex(RootSum(x**5 + x + 3, sin)) == \
-        r"\operatorname{RootSum} {\left(x^{5} + x + 3, \Lambda {\left (x, \sin{\left (x \right )} \right )}\right)}"
+        r"\operatorname{RootSum} {\left(x^{5} + x + 3, \left( x \mapsto \sin{\left (x \right )} \right)\right)}"
 
 
 def test_settings():
