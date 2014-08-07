@@ -2251,6 +2251,11 @@ def _denest_pow(eq):
     transformation.
     """
     b, e = eq.as_base_exp()
+    if b.is_Pow or isinstance(b.func, exp) and e != 1:
+        new = b._eval_power(e)
+        if new is not None:
+            eq = new
+            b, e = new.as_base_exp()
 
     # denest exp with log terms in exponent
     if b is S.Exp1 and e.is_Mul:
@@ -3655,15 +3660,14 @@ def simplify(expr, ratio=1.7, measure=count_ops, fu=False):
     from sympy.functions.special.bessel import BesselBase
     from sympy.vector import Vector
 
-    try:
-        original_expr = expr = signsimp(expr)
-    except AttributeError:
-        pass
+    expr = sympify(expr)
 
     try:
         return expr._eval_simplify(ratio=ratio, measure=measure)
     except AttributeError:
         pass
+
+    original_expr = expr = signsimp(expr)
 
     from sympy.simplify.hyperexpand import hyperexpand
     from sympy.functions.special.bessel import BesselBase
