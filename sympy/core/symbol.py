@@ -64,8 +64,6 @@ class Symbol(AtomicExpr, Boolean):
 
         """
 
-        if assumptions.get('zero', False):
-            return S.Zero
         is_commutative = fuzzy_bool(assumptions.get('commutative', True))
         if is_commutative is None:
             raise ValueError(
@@ -78,6 +76,8 @@ class Symbol(AtomicExpr, Boolean):
     def __new_stage2__(cls, name, **assumptions):
         if not isinstance(name, string_types):
             raise TypeError("name should be a string, not %s" % repr(type(name)))
+        for key in assumptions.keys():
+            assumptions[key] = bool(assumptions[key])
         obj = Expr.__new__(cls)
         obj.name = name
         obj._assumptions = StdFactKB(assumptions)

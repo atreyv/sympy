@@ -1,6 +1,7 @@
 from sympy import I, sqrt, log, exp, sin, asin
-from sympy.core import Symbol, S, Rational, Integer
+from sympy.core import Symbol, S, Rational, Integer, Dummy
 from sympy.core.facts import InconsistentAssumptions
+from sympy import simplify
 
 from sympy.utilities.pytest import raises, XFAIL
 
@@ -32,7 +33,6 @@ def test_zero():
     assert z.is_odd is False
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is True
     assert z.is_comparable is True
     assert z.is_prime is False
     assert z.is_composite is False
@@ -57,7 +57,6 @@ def test_one():
     assert z.is_odd is True
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is False
     assert z.is_comparable is True
     assert z.is_prime is False
     assert z.is_number is True
@@ -86,7 +85,6 @@ def test_negativeone():
     assert z.is_odd is True
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is False
     assert z.is_comparable is True
     assert z.is_prime is False
     assert z.is_composite is False
@@ -112,7 +110,6 @@ def test_infinity():
     assert oo.is_odd is None
     assert oo.is_bounded is False
     assert oo.is_unbounded is True
-    assert oo.is_infinitesimal is False
     assert oo.is_comparable is True
     assert oo.is_prime is None
     assert oo.is_composite is None
@@ -138,7 +135,6 @@ def test_neg_infinity():
     assert mm.is_odd is None
     assert mm.is_bounded is False
     assert mm.is_unbounded is True
-    assert mm.is_infinitesimal is False
     assert mm.is_comparable is True
     assert mm.is_prime is False
     assert mm.is_composite is False
@@ -164,7 +160,6 @@ def test_nan():
     assert nan.is_odd is None
     assert nan.is_bounded is None
     assert nan.is_unbounded is None
-    assert nan.is_infinitesimal is None
     assert nan.is_comparable is False
     assert nan.is_prime is None
     assert nan.is_composite is None
@@ -189,7 +184,6 @@ def test_pos_rational():
     assert r.is_odd is False
     assert r.is_bounded is True
     assert r.is_unbounded is False
-    assert r.is_infinitesimal is False
     assert r.is_comparable is True
     assert r.is_prime is False
     assert r.is_composite is False
@@ -252,7 +246,6 @@ def test_pi():
     assert z.is_odd is False
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is False
     assert z.is_comparable is True
     assert z.is_prime is False
     assert z.is_composite is False
@@ -276,7 +269,6 @@ def test_E():
     assert z.is_odd is False
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is False
     assert z.is_comparable is True
     assert z.is_prime is False
     assert z.is_composite is False
@@ -300,7 +292,6 @@ def test_I():
     assert z.is_odd is False
     assert z.is_bounded is True
     assert z.is_unbounded is False
-    assert z.is_infinitesimal is False
     assert z.is_comparable is False
     assert z.is_prime is False
     assert z.is_composite is False
@@ -614,12 +605,20 @@ def test_Add_is_pos_neg():
     n = Symbol('n', negative=True, bounded=False)
     p = Symbol('p', positive=True, bounded=False)
     x = Symbol('x')
+    xb = Symbol('xb', bounded=True)
     assert (n + p).is_positive is None
-    assert (n + x).is_positive is False
-    assert (p + x).is_positive is True
+    assert (n + x).is_positive is None
+    assert (p + x).is_positive is None
     assert (n + p).is_negative is None
-    assert (n + x).is_negative is True
-    assert (p + x).is_negative is False
+    assert (n + x).is_negative is None
+    assert (p + x).is_negative is None
+
+    assert (n + xb).is_positive is False
+    assert (p + xb).is_positive is True
+    assert (n + xb).is_negative is True
+    assert (p + xb).is_negative is False
+
+    assert (x - S.Infinity).is_negative is None  # issue 7798
 
 
 def test_special_is_rational():
@@ -670,22 +669,13 @@ def test_sanitize_assumptions():
     x = Symbol('x', real=1, positive=0)
     assert x.is_real is True
     assert x.is_positive is False
+    x = Dummy(real=1).is_real is True
 
 
 def test_special_assumptions():
-    x = Symbol('x')
-    z2 = z = Symbol('z', zero=True)
-    assert z2 == z == S.Zero
-    assert (2*z).is_positive is False
-    assert (2*z).is_negative is False
-    assert (2*z).is_zero is True
-    assert (z2*z).is_positive is False
-    assert (z2*z).is_negative is False
-    assert (z2*z).is_zero is True
-
     e = -3 - sqrt(5) + (-sqrt(10)/2 - sqrt(2)/2)**2
-    assert (e < 0) is S.false
-    assert (e > 0) is S.false
+    assert simplify(e < 0) is S.false
+    assert simplify(e > 0) is S.false
     assert (e == 0) is False  # it's not a literal 0
     assert e.equals(0) is True
 

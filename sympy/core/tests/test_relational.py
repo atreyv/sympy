@@ -1,6 +1,6 @@
 from sympy.utilities.pytest import XFAIL, raises
 from sympy import (S, Symbol, symbols, nan, oo, I, pi, Float, And, Or, Not,
-                   Implies, Xor)
+                   Implies, Xor, zoo)
 from sympy.core.relational import (Relational, Equality, Unequality,
                                    GreaterThan, LessThan, StrictGreaterThan,
                                    StrictLessThan, Rel, Eq, Lt, Le,
@@ -130,10 +130,10 @@ def test_bool():
     assert Ge(1, 1) is S.true
     assert Eq(I, 2) is S.false
     assert Ne(I, 2) is S.true
-    assert Gt(I, 2) not in [S.true, S.false]
-    assert Ge(I, 2) not in [S.true, S.false]
-    assert Lt(I, 2) not in [S.true, S.false]
-    assert Le(I, 2) not in [S.true, S.false]
+    raises(TypeError, lambda: Gt(I, 2))
+    raises(TypeError, lambda: Ge(I, 2))
+    raises(TypeError, lambda: Lt(I, 2))
+    raises(TypeError, lambda: Le(I, 2))
     a = Float('.000000000000000000001', '')
     b = Float('.0000000000000000000001', '')
     assert Eq(pi + a, pi + b) is S.false
@@ -439,7 +439,6 @@ def test_nan_equality_exceptions():
     assert Unequality(random.choice(A), nan) is S.true
 
 
-@XFAIL
 def test_inequalities_symbol_name_same():
     """Using the operator and functional forms should give same results."""
     # currently fails because rhs reduces to bool but the lhs does not
@@ -456,7 +455,6 @@ def test_inequalities_symbol_name_same():
             assert Le(a, b) == (a <= b)
 
 
-@XFAIL
 def test_inequalities_symbol_name_same_complex():
     """Using the operator and functional forms should give same results.
     With complex non-real numbers, both should raise errors.
@@ -472,3 +470,29 @@ def test_inequalities_symbol_name_same_complex():
         raises(TypeError, lambda: a >= I)
         raises(TypeError, lambda: Le(a, I))
         raises(TypeError, lambda: a <= I)
+
+
+def test_inequalities_cant_sympify_other():
+    # see issue 7833
+    from operator import gt, lt, ge, le
+
+    bar = "foo"
+
+    for a in (x, S(0), S(1)/3, pi, I, zoo, oo, -oo, nan):
+        for op in (lt, gt, le, ge):
+            raises(TypeError, lambda: op(a, bar))
+
+
+def test_ineq_avoid_wild_symbol_flip():
+    # see issue #7951, we try to avoid this internally, e.g., by using
+    # __lt__ instead of "<".
+    from sympy.core.symbol import Wild
+    p = symbols('p', cls=Wild)
+    # x > p might flip, but Gt should not:
+    assert Gt(x, p) == Gt(x, p, evaluate=False)
+    # Previously failed as 'p > x':
+    e = Lt(x, y).subs({y: p})
+    assert e == Lt(x, p, evaluate=False)
+    # Previously failed as 'p <= x':
+    e = Ge(x, p).doit()
+    assert e == Ge(x, p, evaluate=False)

@@ -742,7 +742,6 @@ def test_K1():
     assert im(z1 + I*z2) == im(z1) + re(z2)
 
 
-@XFAIL  # abs(...).n() does evaluate to 1.00000...
 def test_K2():
     assert abs(3 - sqrt(7) + I*sqrt(6*sqrt(7) - 15)) == 1
 
@@ -952,6 +951,7 @@ def test_M21():
     assert solve(x + sqrt(x) - 2) == [1]
 
 
+@slow
 def test_M22():
     assert solve(2*sqrt(x) + 3*x**R(1, 4) - 2) == [R(1, 16)]
 
@@ -1156,17 +1156,20 @@ def test_N8():
 
 def test_N9():
     with assuming(Q.real(x)):
-        assert solve(abs(x - 1) > 2) == Or(x < -1, x > 3)
+        assert solve(abs(x - 1) > 2) == Or(And(Lt(-oo, x), Lt(x, -1)),
+                                           And(Lt(3, x), Lt(x, oo)))
 
 
 def test_N10():
     p = (x - 1)*(x - 2)*(x - 3)*(x - 4)*(x - 5)
     assert solve(expand(p) < 0, assume=Q.real(x)) == Or(
-        And(Lt(2, x), Lt(x, 3)), And(Lt(4, x), Lt(x, 5)), Lt(x, 1))
+        And(Lt(-oo, x), Lt(x, 1)), And(Lt(2, x), Lt(x, 3)),
+        And(Lt(4, x), Lt(x, 5)))
 
 
 def test_N11():
-    assert solve(6/(x - 3) <= 3, assume=Q.real(x)) == Or(5 <= x, x < 3)
+    assert solve(6/(x - 3) <= 3, assume=Q.real(x)) == \
+        Or(And(Le(5, x), Lt(x, oo)), And(Lt(-oo, x), Lt(x, 3)))
 
 
 @XFAIL
@@ -1912,6 +1915,7 @@ def test_R18():
     assert T.simplify() == -log(2)**2/2 + pi**2/12
 
 
+@slow
 @XFAIL
 def test_R19():
     k = symbols('k', integer=True, positive=True)
@@ -2051,6 +2055,7 @@ def test_T4():
                  - exp(x))/x, x, oo) == -exp(2)
 
 
+@slow
 def test_T5():
     assert  limit(x*log(x)*log(x*exp(x) - x**2)**2/log(log(x**2
                   + 2*exp(exp(3*x**3*log(x))))), x, oo) == Rational(1, 3)
@@ -2333,6 +2338,7 @@ def test_V12():
     assert r1 == -1/(tan(x/2) + 2)
 
 
+@slow
 @XFAIL
 def test_V13():
     r1 = integrate(1/(6 + 3*cos(x) + 4*sin(x)), x)
@@ -2341,6 +2347,7 @@ def test_V13():
     assert r1.simplify() == 2*sqrt(11)*atan(sqrt(11)*(3*tan(x/2) + 4)/11)/11
 
 
+@slow
 @XFAIL
 def test_V14():
     r1 = integrate(log(abs(x**2 - y**2)), x)
@@ -2367,6 +2374,7 @@ def test_V16():
     raise NotImplementedError("cosine integral function not supported")
 
 
+@slow
 @XFAIL
 def test_V17():
     r1 = integrate((diff(f(x), x)*g(x)
@@ -2526,7 +2534,7 @@ def test_W22():
     s = Lambda(x, Piecewise((1, And(x >= 1, x <= 2)), (0, True)))
     assert (integrate(s(t)*cos(t), (t, 0, u)) ==
             Piecewise((sin(u) - sin(1), And(u <= 2, u >= 1)),
-                      (0, u <= 1),
+                      (0, And(u <= 1, u >= -oo)),
                       (-sin(1) + sin(2), True)))
 
 
@@ -2853,6 +2861,7 @@ def test_Y2():
     assert f == cos(t*abs(w - 1))
 
 
+@slow
 @XFAIL
 def test_Y3():
     t = symbols('t', real=True, positive=True)

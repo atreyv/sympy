@@ -110,6 +110,8 @@ class CodePrinter(StrPrinter):
 
         if assign_to:
             expr = Assignment(assign_to, expr)
+        else:
+            expr = _sympify(expr)
 
         # keep a set of expressions that are not strictly translatable to Code
         # and number constants that must be declared and initialized
@@ -424,10 +426,7 @@ class CodePrinter(StrPrinter):
         if len(b) == 0:
             return sign + '*'.join(a_str)
         elif len(b) == 1:
-            if len(a) == 1 and not (a[0].is_Atom or a[0].is_Add):
-                return sign + "%s/" % a_str[0] + '*'.join(b_str)
-            else:
-                return sign + '*'.join(a_str) + "/%s" % b_str[0]
+            return sign + '*'.join(a_str) + "/" + b_str[0]
         else:
             return sign + '*'.join(a_str) + "/(%s)" % '*'.join(b_str)
 

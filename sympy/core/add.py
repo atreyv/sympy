@@ -2,13 +2,14 @@ from __future__ import print_function, division
 
 from collections import defaultdict
 
-from sympy.core.basic import C, Basic
-from sympy.core.compatibility import cmp_to_key, reduce, is_sequence
-from sympy.core.singleton import S
-from sympy.core.operations import AssocOp
-from sympy.core.cache import cacheit
-from sympy.core.numbers import ilcm, igcd
-from sympy.core.expr import Expr
+from .basic import C, Basic
+from .compatibility import cmp_to_key, reduce, is_sequence
+from .logic import _fuzzy_group
+from .singleton import S
+from .operations import AssocOp
+from .cache import cacheit
+from .numbers import ilcm, igcd
+from .expr import Expr
 
 
 # Key for sorting commutative args in canonical order
@@ -215,13 +216,11 @@ class Add(Expr, AssocOp):
         # oo, -oo
         if coeff is S.Infinity:
             newseq = [f for f in newseq if not
-                      (f.is_nonnegative or f.is_real and
-                       (f.is_bounded or f.is_infinitesimal))]
+                      (f.is_nonnegative or f.is_real and f.is_bounded)]
 
         elif coeff is S.NegativeInfinity:
             newseq = [f for f in newseq if not
-                      (f.is_nonpositive or f.is_real and
-                       (f.is_bounded or f.is_infinitesimal))]
+                      (f.is_nonpositive or f.is_real and f.is_bounded)]
 
         if coeff is S.ComplexInfinity:
             # zoo might be
@@ -446,26 +445,26 @@ class Add(Expr, AssocOp):
         return all(term._eval_is_algebraic_expr(syms) for term in self.args)
 
     # assumption methods
-    _eval_is_real = lambda self: self._eval_template_is_attr(
-        'is_real', when_multiple=None)
-    _eval_is_complex = lambda self: self._eval_template_is_attr(
-        'is_complex', when_multiple=None)
-    _eval_is_antihermitian = lambda self: self._eval_template_is_attr(
-        'is_antihermitian', when_multiple=None)
-    _eval_is_bounded = lambda self: self._eval_template_is_attr(
-        'is_bounded', when_multiple=None)
-    _eval_is_hermitian = lambda self: self._eval_template_is_attr(
-        'is_hermitian', when_multiple=None)
-    _eval_is_integer = lambda self: self._eval_template_is_attr(
-        'is_integer', when_multiple=None)
-    _eval_is_rational = lambda self: self._eval_template_is_attr(
-        'is_rational', when_multiple=None)
-    _eval_is_commutative = lambda self: self._eval_template_is_attr(
-        'is_commutative')
+    _eval_is_real = lambda self: _fuzzy_group(
+        (a.is_real for a in self.args), quick_exit=True)
+    _eval_is_complex = lambda self: _fuzzy_group(
+        (a.is_complex for a in self.args), quick_exit=True)
+    _eval_is_antihermitian = lambda self: _fuzzy_group(
+        (a.is_antihermitian for a in self.args), quick_exit=True)
+    _eval_is_bounded = lambda self: _fuzzy_group(
+        (a.is_bounded for a in self.args), quick_exit=True)
+    _eval_is_hermitian = lambda self: _fuzzy_group(
+        (a.is_hermitian for a in self.args), quick_exit=True)
+    _eval_is_integer = lambda self: _fuzzy_group(
+        (a.is_integer for a in self.args), quick_exit=True)
+    _eval_is_rational = lambda self: _fuzzy_group(
+        (a.is_rational for a in self.args), quick_exit=True)
+    _eval_is_commutative = lambda self: _fuzzy_group(
+        a.is_commutative for a in self.args)
 
     def _eval_is_imaginary(self):
         from sympy import im
-        ret = self._eval_template_is_attr('is_imaginary', when_multiple=None)
+        ret = _fuzzy_group(a.is_imaginary for a in self.args)
         if not ret:
             return ret
         newarg = []
@@ -515,7 +514,7 @@ class Add(Expr, AssocOp):
             if ubound:
                 unbounded.add(ispos)
                 if len(unbounded) > 1:
-                    return None
+                    return
             if ispos:
                 pos = True
                 continue
@@ -529,22 +528,13 @@ class Add(Expr, AssocOp):
                 continue
 
             if ubound is None:
-                # sign is unknown; if we don't know the boundedness
-                # we're done: we don't know. That is technically true,
-                # but the only option is that we have something like
-                # oo - oo which is NaN and it really doesn't matter
-                # what sign we apply to that because it (when finally
-                # computed) will trump any sign. So instead of returning
-                # None, we pass.
-                pass
-            else:
-                return None
+                return
             unknown_sign = True
 
         if unbounded:
             return unbounded.pop()
         elif unknown_sign:
-            return None
+            return
         elif not nonpos and not nonneg and pos:
             return True
         elif not nonpos and pos:
@@ -566,7 +556,7 @@ class Add(Expr, AssocOp):
             if ubound:
                 unbounded.add(isneg)
                 if len(unbounded) > 1:
-                    return None
+                    return
             if isneg:
                 neg = True
                 continue
@@ -580,20 +570,13 @@ class Add(Expr, AssocOp):
                 continue
 
             if ubound is None:
-                # sign is unknown; if we don't know the boundedness
-                # we're done: we don't know. That is technically true,
-                # but the only option is that we have something like
-                # oo - oo which is NaN and it really doesn't matter
-                # what sign we apply to that because it (when finally
-                # computed) will trump any sign. So instead of returning
-                # None, we pass.
-                pass
+                return
             unknown_sign = True
 
         if unbounded:
             return unbounded.pop()
         elif unknown_sign:
-            return None
+            return
         elif not nonneg and not nonpos and neg:
             return True
         elif not nonneg and neg:
