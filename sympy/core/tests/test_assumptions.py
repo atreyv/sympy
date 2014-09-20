@@ -1,5 +1,5 @@
 from sympy import I, sqrt, log, exp, sin, asin
-from sympy.core import Symbol, S, Rational, Integer, Dummy
+from sympy.core import Symbol, S, Rational, Integer, Dummy, Wild
 from sympy.core.facts import InconsistentAssumptions
 from sympy import simplify
 
@@ -370,12 +370,11 @@ def test_symbol_falsepositive():
     assert x.is_nonzero is None
 
 
-@XFAIL
 def test_neg_symbol_falsepositive():
     x = -Symbol('x', positive=False)
     assert x.is_positive is None
     assert x.is_nonpositive is None
-    assert x.is_negative is False  # this currently returns None
+    assert x.is_negative is False
     assert x.is_nonnegative is None
     assert x.is_zero is None
     assert x.is_nonzero is None
@@ -666,10 +665,13 @@ def test_issue_6275():
 
 def test_sanitize_assumptions():
     # issue 6666
-    x = Symbol('x', real=1, positive=0)
-    assert x.is_real is True
-    assert x.is_positive is False
-    x = Dummy(real=1).is_real is True
+    for cls in (Symbol, Dummy, Wild):
+        x = cls('x', real=1, positive=0)
+        assert x.is_real is True
+        assert x.is_positive is False
+        assert cls('', real=True, positive=None).is_positive is None
+        raises(ValueError, lambda: cls('', commutative=None))
+    raises(ValueError, lambda: Symbol._sanitize(dict(commutative=None)))
 
 
 def test_special_assumptions():
