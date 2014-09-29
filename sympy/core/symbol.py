@@ -68,6 +68,20 @@ class Symbol(AtomicExpr, Boolean):
 
         # sanitize other assumptions so 1 -> True and 0 -> False
         for key in list(assumptions.keys()):
+            from collections import defaultdict
+            from sympy.utilities.exceptions import SymPyDeprecationWarning
+            keymap = defaultdict(lambda: None)
+            keymap.update({'bounded': 'finite', 'unbounded': 'infinite', 'infinitesimal': 'zero'})
+            if keymap[key]:
+                SymPyDeprecationWarning(
+                    feature="%s assumption" % key,
+                    useinstead="%s" % keymap[key],
+                    issue=8071,
+                    deprecated_since_version="0.7.6").warn()
+                assumptions[keymap[key]] = assumptions[key]
+                assumptions.pop(key)
+                key = keymap[key]
+
             v = assumptions[key]
             if v is None:
                 assumptions.pop(key)
@@ -120,6 +134,7 @@ class Symbol(AtomicExpr, Boolean):
         return self.class_key(), (1, (str(self),)), S.One.sort_key(), S.One
 
     def as_dummy(self):
+        """Return a Dummy having the same name and same assumptions as self."""
         return Dummy(self.name, **self.assumptions0)
 
     def __call__(self, *args):

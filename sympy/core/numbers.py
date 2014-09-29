@@ -304,7 +304,7 @@ class Number(AtomicExpr):
             return -new
         return self  # there is no other possibility
 
-    def _eval_is_bounded(self):
+    def _eval_is_finite(self):
         return True
 
     @classmethod
@@ -723,7 +723,7 @@ class Float(Number):
     def _as_mpf_op(self, prec):
         return self._mpf_, max(prec, self._prec)
 
-    def _eval_is_bounded(self):
+    def _eval_is_finite(self):
         if self._mpf_ in (_mpf_inf, _mpf_ninf):
             return False
         return True
@@ -1871,6 +1871,121 @@ for i_type in integer_types:
     converter[i_type] = Integer
 
 
+class AlgebraicNumber(Expr):
+    """Class for representing algebraic numbers in SymPy. """
+
+    __slots__ = ['rep', 'root', 'alias', 'minpoly']
+
+    is_AlgebraicNumber = True
+    is_algebraic = True
+    is_number = True
+
+    def __new__(cls, expr, coeffs=Tuple(), alias=None, **args):
+        """Construct a new algebraic number. """
+
+        from sympy.polys.polyclasses import ANP, DMP
+        from sympy.polys.numberfields import minimal_polynomial
+        from sympy.core.symbol import Symbol
+
+        expr = sympify(expr)
+
+        if isinstance(expr, (tuple, Tuple)):
+            minpoly, root = expr
+
+            if not minpoly.is_Poly:
+                minpoly = C.Poly(minpoly)
+        elif expr.is_AlgebraicNumber:
+            minpoly, root = expr.minpoly, expr.root
+        else:
+            minpoly, root = minimal_polynomial(
+                expr, args.get('gen'), polys=True), expr
+
+        dom = minpoly.get_domain()
+
+        if coeffs != Tuple():
+            if not isinstance(coeffs, ANP):
+                rep = DMP.from_sympy_list(sympify(coeffs), 0, dom)
+                scoeffs = Tuple(*coeffs)
+            else:
+                rep = DMP.from_list(coeffs.to_list(), 0, dom)
+                scoeffs = Tuple(*coeffs.to_list())
+
+            if rep.degree() >= minpoly.degree():
+                rep = rep.rem(minpoly.rep)
+
+            sargs = (root, scoeffs)
+
+        else:
+            rep = DMP.from_list([1, 0], 0, dom)
+
+            if root.is_negative:
+                rep = -rep
+
+            sargs = (root, coeffs)
+
+        if alias is not None:
+            if not isinstance(alias, Symbol):
+                alias = Symbol(alias)
+            sargs = sargs + (alias,)
+
+        obj = Expr.__new__(cls, *sargs)
+
+        obj.rep = rep
+        obj.root = root
+        obj.alias = alias
+        obj.minpoly = minpoly
+
+        return obj
+
+    def __hash__(self):
+        return super(AlgebraicNumber, self).__hash__()
+
+    def _eval_evalf(self, prec):
+        return self.as_expr()._evalf(prec)
+
+    @property
+    def is_aliased(self):
+        """Returns ``True`` if ``alias`` was set. """
+        return self.alias is not None
+
+    def as_poly(self, x=None):
+        """Create a Poly instance from ``self``. """
+        if x is not None:
+            return C.Poly.new(self.rep, x)
+        else:
+            if self.alias is not None:
+                return C.Poly.new(self.rep, self.alias)
+            else:
+                return C.PurePoly.new(self.rep, C.Dummy('x'))
+
+    def as_expr(self, x=None):
+        """Create a Basic expression from ``self``. """
+        return self.as_poly(x or self.root).as_expr().expand()
+
+    def coeffs(self):
+        """Returns all SymPy coefficients of an algebraic number. """
+        return [ self.rep.dom.to_sympy(c) for c in self.rep.all_coeffs() ]
+
+    def native_coeffs(self):
+        """Returns all native coefficients of an algebraic number. """
+        return self.rep.all_coeffs()
+
+    def to_algebraic_integer(self):
+        """Convert ``self`` to an algebraic integer. """
+        f = self.minpoly
+
+        if f.LC() == 1:
+            return self
+
+        coeff = f.LC()**(f.degree() - 1)
+        poly = f.compose(C.Poly(f.gen/f.LC()))
+
+        minpoly = poly*coeff
+        root = f.LC()*self.root
+
+        return AlgebraicNumber((minpoly, root), self.coeffs())
+
+
 class RationalConstant(Rational):
     """
     Abstract base class for rationals with specific behaviors
@@ -2131,9 +2246,11 @@ class Infinity(with_metaclass(Singleton, Number)):
 
     is_commutative = True
     is_positive = True
-    is_bounded = False
+    is_finite = False
     is_integer = None
     is_rational = None
+    is_algebraic = None
+    is_transcendental = None
     is_odd = None
     is_number = True
 
@@ -2289,7 +2406,7 @@ class Infinity(with_metaclass(Singleton, Number)):
             raise TypeError("Invalid complex comparison: %s and %s" %
                             (self, other))
         if other.is_real:
-            if other.is_bounded or other is S.NegativeInfinity:
+            if other.is_finite or other is S.NegativeInfinity:
                 return S.false
             elif other is S.Infinity:
                 return S.true
@@ -2304,7 +2421,7 @@ class Infinity(with_metaclass(Singleton, Number)):
             raise TypeError("Invalid complex comparison: %s and %s" %
                             (self, other))
         if other.is_real:
-            if other.is_bounded or other is S.NegativeInfinity:
+            if other.is_finite or other is S.NegativeInfinity:
                 return S.true
             elif other is S.Infinity:
                 return S.false
@@ -2345,10 +2462,12 @@ class NegativeInfinity(with_metaclass(Singleton, Number)):
     is_commutative = True
     is_real = True
     is_positive = False
-    is_bounded = False
+    is_finite = False
     is_integer = None
     is_rational = None
     is_number = True
+    is_algebraic = None
+    is_transcendental = None
 
     __slots__ = []
 
@@ -2499,7 +2618,7 @@ class NegativeInfinity(with_metaclass(Singleton, Number)):
             raise TypeError("Invalid complex comparison: %s and %s" %
                             (self, other))
         if other.is_real:
-            if other.is_bounded or other is S.Infinity:
+            if other.is_finite or other is S.Infinity:
                 return S.true
             elif other is S.NegativeInfinity:
                 return S.false
@@ -2538,7 +2657,7 @@ class NegativeInfinity(with_metaclass(Singleton, Number)):
             raise TypeError("Invalid complex comparison: %s and %s" %
                             (self, other))
         if other.is_real:
-            if other.is_bounded or other is S.Infinity:
+            if other.is_finite or other is S.Infinity:
                 return S.false
             elif other is S.NegativeInfinity:
                 return S.true
@@ -2595,9 +2714,11 @@ class NaN(with_metaclass(Singleton, Number)):
     is_commutative = True
     is_real = None
     is_rational = None
+    is_algebraic = None
+    is_transcendental = None
     is_integer = None
     is_comparable = False
-    is_bounded = None
+    is_finite = None
     is_zero = None
     is_prime = None
     is_positive = None
@@ -2712,7 +2833,7 @@ class ComplexInfinity(with_metaclass(Singleton, AtomicExpr)):
     """
 
     is_commutative = True
-    is_bounded = False
+    is_finite = False
     is_real = None
     is_number = True
 
@@ -2751,7 +2872,7 @@ zoo = S.ComplexInfinity
 class NumberSymbol(AtomicExpr):
 
     is_commutative = True
-    is_bounded = True
+    is_finite = True
     is_number = True
 
     __slots__ = []
@@ -2882,6 +3003,8 @@ class Exp1(with_metaclass(Singleton, NumberSymbol)):
     is_negative = False  # XXX Forces is_negative/is_nonnegative
     is_irrational = True
     is_number = True
+    is_algebraic = False
+    is_transcendental = True
 
     __slots__ = []
 
@@ -2959,6 +3082,8 @@ class Pi(with_metaclass(Singleton, NumberSymbol)):
     is_negative = False
     is_irrational = True
     is_number = True
+    is_algebraic = False
+    is_transcendental = True
 
     __slots__ = []
 
@@ -3018,6 +3143,8 @@ class GoldenRatio(with_metaclass(Singleton, NumberSymbol)):
     is_negative = False
     is_irrational = True
     is_number = True
+    is_algebraic = True
+    is_transcendental = False
 
     __slots__ = []
 
@@ -3185,8 +3312,10 @@ class ImaginaryUnit(with_metaclass(Singleton, AtomicExpr)):
 
     is_commutative = True
     is_imaginary = True
-    is_bounded = True
+    is_finite = True
     is_number = True
+    is_algebraic = True
+    is_transcendental = False
 
     __slots__ = []
 

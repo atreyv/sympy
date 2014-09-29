@@ -541,9 +541,9 @@ class Mul(Expr, AssocOp):
         # zoo
         if coeff is S.ComplexInfinity:
             # zoo might be
-            #   unbounded_real + bounded_im
-            #   bounded_real + unbounded_im
-            #   unbounded_real + unbounded_im
+            #   infinite_real + bounded_im
+            #   bounded_real + infinite_im
+            #   infinite_real + infinite_im
             # and non-zero real or imaginary will not change that status.
             c_part = [c for c in c_part if not (c.is_nonzero and
                                                 c.is_real is not None)]
@@ -956,8 +956,8 @@ class Mul(Expr, AssocOp):
     def _eval_is_algebraic_expr(self, syms):
         return all(term._eval_is_algebraic_expr(syms) for term in self.args)
 
-    _eval_is_bounded = lambda self: _fuzzy_group(
-        a.is_bounded for a in self.args)
+    _eval_is_finite = lambda self: _fuzzy_group(
+        a.is_finite for a in self.args)
     _eval_is_commutative = lambda self: _fuzzy_group(
         a.is_commutative for a in self.args)
     _eval_is_complex = lambda self: _fuzzy_group(
@@ -965,6 +965,13 @@ class Mul(Expr, AssocOp):
 
     def _eval_is_rational(self):
         r = _fuzzy_group((a.is_rational for a in self.args), quick_exit=True)
+        if r:
+            return r
+        elif r is False:
+            return self._eval_is_zero()
+
+    def _eval_is_algebraic(self):
+        r = _fuzzy_group((a.is_algebraic for a in self.args), quick_exit=True)
         if r:
             return r
         elif r is False:
@@ -979,7 +986,7 @@ class Mul(Expr, AssocOp):
                     return  # 0*oo is nan and nan.is_zero is None
                 zero = True
             else:
-                if not a.is_bounded:
+                if not a.is_finite:
                     if zero:
                         return  # 0*oo is nan and nan.is_zero is None
                     unbound = True
@@ -1019,7 +1026,7 @@ class Mul(Expr, AssocOp):
                     if not z and zero is False:
                         zero = z
                     elif z:
-                        if all(a.is_bounded for a in self.args):
+                        if all(a.is_finite for a in self.args):
                             return True
                         return
             elif t.is_real is False:
@@ -1081,9 +1088,9 @@ class Mul(Expr, AssocOp):
             if a:
                 others = list(self.args)
                 others.remove(t)
-                if all(x.is_rational is True for x in others):
+                if all((x.is_rational and x.is_nonzero) is True for x in others):
                     return True
-                return None
+                return
             if a is None:
                 return
         return False

@@ -130,7 +130,7 @@ class Add(Expr, AssocOp):
             # 3 or NaN
             elif o.is_Number:
                 if (o is S.NaN or coeff is S.ComplexInfinity and
-                        o.is_bounded is False):
+                        o.is_finite is False):
                     # we know for sure the result will be nan
                     return [S.NaN], [], None
                 if coeff.is_Number:
@@ -141,7 +141,7 @@ class Add(Expr, AssocOp):
                 continue
 
             elif o is S.ComplexInfinity:
-                if coeff.is_bounded is False:
+                if coeff.is_finite is False:
                     # we know for sure the result will be nan
                     return [S.NaN], [], None
                 coeff = S.ComplexInfinity
@@ -216,22 +216,22 @@ class Add(Expr, AssocOp):
         # oo, -oo
         if coeff is S.Infinity:
             newseq = [f for f in newseq if not
-                      (f.is_nonnegative or f.is_real and f.is_bounded)]
+                      (f.is_nonnegative or f.is_real and f.is_finite)]
 
         elif coeff is S.NegativeInfinity:
             newseq = [f for f in newseq if not
-                      (f.is_nonpositive or f.is_real and f.is_bounded)]
+                      (f.is_nonpositive or f.is_real and f.is_finite)]
 
         if coeff is S.ComplexInfinity:
             # zoo might be
-            #   unbounded_real + bounded_im
-            #   bounded_real + unbounded_im
-            #   unbounded_real + unbounded_im
-            # addition of a bounded real or imaginary number won't be able to
-            # change the zoo nature; if unbounded a NaN condition could result
-            # if the unbounded symbol had sign opposite of the unbounded
-            # portion of zoo, e.g., unbounded_real - unbounded_real.
-            newseq = [c for c in newseq if not (c.is_bounded and
+            #   infinite_real + finite_im
+            #   finite_real + infinite_im
+            #   infinite_real + infinite_im
+            # addition of a finite real or imaginary number won't be able to
+            # change the zoo nature; adding an infinite qualtity would result
+            # in a NaN condition if it had sign opposite of the infinite
+            # portion of zoo, e.g., infinite_real - infinite_real.
+            newseq = [c for c in newseq if not (c.is_finite and
                                                 c.is_real is not None)]
 
         # process O(x)
@@ -451,14 +451,16 @@ class Add(Expr, AssocOp):
         (a.is_complex for a in self.args), quick_exit=True)
     _eval_is_antihermitian = lambda self: _fuzzy_group(
         (a.is_antihermitian for a in self.args), quick_exit=True)
-    _eval_is_bounded = lambda self: _fuzzy_group(
-        (a.is_bounded for a in self.args), quick_exit=True)
+    _eval_is_finite = lambda self: _fuzzy_group(
+        (a.is_finite for a in self.args), quick_exit=True)
     _eval_is_hermitian = lambda self: _fuzzy_group(
         (a.is_hermitian for a in self.args), quick_exit=True)
     _eval_is_integer = lambda self: _fuzzy_group(
         (a.is_integer for a in self.args), quick_exit=True)
     _eval_is_rational = lambda self: _fuzzy_group(
         (a.is_rational for a in self.args), quick_exit=True)
+    _eval_is_algebraic = lambda self: _fuzzy_group(
+        (a.is_algebraic for a in self.args), quick_exit=True)
     _eval_is_commutative = lambda self: _fuzzy_group(
         a.is_commutative for a in self.args)
 
@@ -504,16 +506,16 @@ class Add(Expr, AssocOp):
         if self.is_number:
             return super(Add, self)._eval_is_positive()
         pos = nonneg = nonpos = unknown_sign = False
-        unbounded = set()
+        saw_INF = set()
         args = [a for a in self.args if not a.is_zero]
         if not args:
             return False
         for a in args:
             ispos = a.is_positive
-            ubound = a.is_unbounded
-            if ubound:
-                unbounded.add(ispos)
-                if len(unbounded) > 1:
+            infinite = a.is_infinite
+            if infinite:
+                saw_INF.add(ispos)
+                if len(saw_INF) > 1:
                     return
             if ispos:
                 pos = True
@@ -527,12 +529,12 @@ class Add(Expr, AssocOp):
             elif a.is_zero:
                 continue
 
-            if ubound is None:
+            if infinite is None:
                 return
             unknown_sign = True
 
-        if unbounded:
-            return unbounded.pop()
+        if saw_INF:
+            return saw_INF.pop()
         elif unknown_sign:
             return
         elif not nonpos and not nonneg and pos:
@@ -546,16 +548,16 @@ class Add(Expr, AssocOp):
         if self.is_number:
             return super(Add, self)._eval_is_negative()
         neg = nonpos = nonneg = unknown_sign = False
-        unbounded = set()
+        saw_INF = set()
         args = [a for a in self.args if not a.is_zero]
         if not args:
             return False
         for a in args:
             isneg = a.is_negative
-            ubound = a.is_unbounded
-            if ubound:
-                unbounded.add(isneg)
-                if len(unbounded) > 1:
+            infinite = a.is_infinite
+            if infinite:
+                saw_INF.add(isneg)
+                if len(saw_INF) > 1:
                     return
             if isneg:
                 neg = True
@@ -569,12 +571,12 @@ class Add(Expr, AssocOp):
             elif a.is_zero:
                 continue
 
-            if ubound is None:
+            if infinite is None:
                 return
             unknown_sign = True
 
-        if unbounded:
-            return unbounded.pop()
+        if saw_INF:
+            return saw_INF.pop()
         elif unknown_sign:
             return
         elif not nonneg and not nonpos and neg:
@@ -696,7 +698,7 @@ class Add(Expr, AssocOp):
         if not self.is_Add:
             return self.as_leading_term(x)
 
-        unbounded = [t for t in self.args if t.is_unbounded]
+        infinite = [t for t in self.args if t.is_infinite]
 
         self = self.func(*[t.as_leading_term(x) for t in self.args]).removeO()
         if not self:
@@ -704,7 +706,7 @@ class Add(Expr, AssocOp):
             # back a term, so compute the leading term (via series)
             return old.compute_leading_term(x)
         elif self is S.NaN:
-            return old.func._from_args(unbounded)
+            return old.func._from_args(infinite)
         elif not self.is_Add:
             return self
         else:

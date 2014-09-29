@@ -16,7 +16,7 @@ from sympy.physics.units import cm
 from sympy.polys.rootoftools import RootOf
 
 from sympy.utilities.pytest import slow, XFAIL, raises, skip
-from sympy.utilities.randtest import test_numerically as tn
+from sympy.utilities.randtest import verify_numerically as tn
 
 from sympy.abc import a, b, c, d, k, h, p, x, y, z, t, q, m
 
@@ -506,17 +506,23 @@ def test_solve_undetermined_coeffs():
 
 
 def test_solve_inequalities():
+    x = Symbol('x')
     system = [Lt(x**2 - 2, 0), Gt(x**2 - 1, 0)]
 
     assert solve(system) == \
         And(Or(And(Lt(-sqrt(2), re(x)), Lt(re(x), -1)),
                And(Lt(1, re(x)), Lt(re(x), sqrt(2)))), Eq(im(x), 0))
-    assert solve(system, assume=Q.real(x)) == \
+
+    x = Symbol('x', real=True)
+    system = [Lt(x**2 - 2, 0), Gt(x**2 - 1, 0)]
+
+    assert solve(system) == \
         Or(And(Lt(-sqrt(2), x), Lt(x, -1)), And(Lt(1, x), Lt(x, sqrt(2))))
 
     # issue 6627, 3448
-    assert solve((x - 3)/(x - 2) < 0, x, assume=Q.real(x)) == And(Lt(2, x), Lt(x, 3))
-    assert solve(x/(x + 1) > 1, x, assume=Q.real(x)) == And(Lt(-oo, x), Lt(x, -1))
+    assert solve((x - 3)/(x - 2) < 0, x) == And(Lt(2, x), Lt(x, 3))
+    assert solve(x/(x + 1) > 1, x) == And(Lt(-oo, x), Lt(x, -1))
+
 
 def test_issue_4793():
     assert solve(1/x) == []
@@ -1516,3 +1522,7 @@ def test_issue_2777():
     e2 += 6
     assert solve((e1, e2), (x, y)) == []
     assert solve((e1, e2), (x, y), check=False) == ans
+
+def test_issue_7322():
+    number = 5.62527e-35
+    assert solve(x - number, x)[0] == number
