@@ -786,15 +786,15 @@ class Mul(Expr, AssocOp):
             else:
                 return plain
 
+    @cacheit
     def _eval_derivative(self, s):
-        terms = list(self.args)
-        factors = []
-        for i in xrange(len(terms)):
-            t = terms[i].diff(s)
-            if t is S.Zero:
-                continue
-            factors.append(self.func(*(terms[:i] + [t] + terms[i + 1:])))
-        return Add(*factors)
+        args = list(self.args)
+        terms = []
+        for i in xrange(len(args)):
+            d = args[i].diff(s)
+            if d:
+                terms.append(self.func(*(args[:i] + [d] + args[i + 1:])))
+        return Add(*terms)
 
     def _matches_simple(self, expr, repl_dict):
         # handle (w*3).matches('x*5') -> {w: x*5/3}
@@ -978,18 +978,18 @@ class Mul(Expr, AssocOp):
             return self.is_zero
 
     def _eval_is_zero(self):
-        zero = unbound = False
+        zero = infinite = False
         for a in self.args:
             z = a.is_zero
             if z:
-                if unbound:
+                if infinite:
                     return  # 0*oo is nan and nan.is_zero is None
                 zero = True
             else:
                 if not a.is_finite:
                     if zero:
                         return  # 0*oo is nan and nan.is_zero is None
-                    unbound = True
+                    infinite = True
                 if zero is False and z is None:  # trap None
                     zero = None
         return zero
