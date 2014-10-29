@@ -550,7 +550,10 @@ class PrettyPrinter(Printer):
         Lim = prettyForm('lim')
 
         LimArg = self._print(z)
-        LimArg = prettyForm(*LimArg.right('->'))
+        if self._use_unicode:
+            LimArg = prettyForm(*LimArg.right(u('\u2500\u2192')))
+        else:
+            LimArg = prettyForm(*LimArg.right('->'))
         LimArg = prettyForm(*LimArg.right(self._print(z0)))
 
         if z0 in (S.Infinity, S.NegativeInfinity):
@@ -1229,7 +1232,8 @@ class PrettyPrinter(Printer):
 
         for i, term in enumerate(terms):
             if term.is_Mul and _coeff_isneg(term):
-                pform = self._print(-term)
+                coeff, other = term.as_coeff_mul()
+                pform = self._print(C.Mul(-coeff, *other, evaluate=False))
                 pforms.append(pretty_negative(pform, i))
             elif term.is_Rational and term.q > 1:
                 pforms.append(None)

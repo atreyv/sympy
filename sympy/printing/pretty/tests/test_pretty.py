@@ -3016,7 +3016,7 @@ x->oo \
     ucode_str = \
 u("""\
 lim x\n\
-x->∞ \
+x─→∞ \
 """)
     assert pretty(expr) == ascii_str
     assert upretty(expr) == ucode_str
@@ -3032,7 +3032,7 @@ x->0+  \
 u("""\
       2\n\
  lim x \n\
-x->0⁺  \
+x─→0⁺  \
 """)
     assert pretty(expr) == ascii_str
     assert upretty(expr) == ucode_str
@@ -3048,7 +3048,7 @@ x->0+x\
 u("""\
      1\n\
  lim ─\n\
-x->0⁺x\
+x─→0⁺x\
 """)
     assert pretty(expr) == ascii_str
     assert upretty(expr) == ucode_str
@@ -3064,7 +3064,7 @@ x->0+  x   \
 u("""\
      sin(x)\n\
  lim ──────\n\
-x->0⁺  x   \
+x─→0⁺  x   \
 """)
     assert pretty(expr) == ascii_str
     assert upretty(expr) == ucode_str
@@ -3080,7 +3080,7 @@ x->0-  x   \
 u("""\
      sin(x)\n\
  lim ──────\n\
-x->0⁻  x   \
+x─→0⁻  x   \
 """)
     assert pretty(expr) == ascii_str
     assert upretty(expr) == ucode_str
@@ -4803,3 +4803,58 @@ def test_pretty_Complement():
 def test_pretty_Contains():
     assert pretty(Contains(x, S.Integers)) == 'Contains(x, Integers())'
     assert upretty(Contains(x, S.Integers)) == u('x ∈ ℤ')
+
+
+def test_issue_8292():
+    from sympy.core import sympify
+    e = sympify('((x+x**4)/(x-1))-(2*(x-1)**4/(x-1)**4)', evaluate=False)
+    ucode_str = \
+u("""\
+           4    4    \n\
+  2⋅(x - 1)    x  + x\n\
+- ────────── + ──────\n\
+          4    x - 1 \n\
+   (x - 1)           \
+""")
+    ascii_str = \
+"""\
+           4    4    \n\
+  2*(x - 1)    x  + x\n\
+- ---------- + ------\n\
+          4    x - 1 \n\
+   (x - 1)           \
+"""
+    assert pretty(e) == ascii_str
+    assert upretty(e) == ucode_str
+
+
+def test_issue_4335():
+    expr = -y(x).diff(x)
+    ucode_str = \
+u("""\
+ d       \n\
+-──(y(x))\n\
+ dx      \
+""")
+    ascii_str = \
+"""\
+  d       \n\
+- --(y(x))\n\
+  dx      \
+"""
+    assert pretty(expr) == ascii_str
+    assert upretty(expr) == ucode_str
+
+
+def test_issue_8344():
+    from sympy.core import sympify
+    e = sympify('2*x*y**2/1**2 + 1', evaluate=False)
+    ucode_str = \
+u("""\
+     2    \n\
+2⋅x⋅y     \n\
+────── + 1\n\
+   2      \n\
+  1       \
+""")
+    assert upretty(e) == ucode_str
