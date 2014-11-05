@@ -237,10 +237,11 @@ class Expr(Basic, EvalfMixin):
         for me in (self, other):
             if me.is_complex and me.is_real is False:
                 raise TypeError("Invalid comparison of complex %s" % me)
-        dif = self - other
-        if dif.is_nonnegative is not None and \
-                dif.is_nonnegative is not dif.is_negative:
-            return sympify(dif.is_nonnegative)
+        if self.is_real and other.is_real:
+            dif = self - other
+            if dif.is_nonnegative is not None and \
+                    dif.is_nonnegative is not dif.is_negative:
+                return sympify(dif.is_nonnegative)
         return C.GreaterThan(self, other, evaluate=False)
 
     def __le__(self, other):
@@ -251,10 +252,11 @@ class Expr(Basic, EvalfMixin):
         for me in (self, other):
             if me.is_complex and me.is_real is False:
                 raise TypeError("Invalid comparison of complex %s" % me)
-        dif = self - other
-        if dif.is_nonpositive is not None and \
-                dif.is_nonpositive is not dif.is_positive:
-            return sympify(dif.is_nonpositive)
+        if self.is_real and other.is_real:
+            dif = self - other
+            if dif.is_nonpositive is not None and \
+                    dif.is_nonpositive is not dif.is_positive:
+                return sympify(dif.is_nonpositive)
         return C.LessThan(self, other, evaluate=False)
 
     def __gt__(self, other):
@@ -265,10 +267,11 @@ class Expr(Basic, EvalfMixin):
         for me in (self, other):
             if me.is_complex and me.is_real is False:
                 raise TypeError("Invalid comparison of complex %s" % me)
-        dif = self - other
-        if dif.is_positive is not None and \
-                dif.is_positive is not dif.is_nonpositive:
-            return sympify(dif.is_positive)
+        if self.is_real and other.is_real:
+            dif = self - other
+            if dif.is_positive is not None and \
+                    dif.is_positive is not dif.is_nonpositive:
+                return sympify(dif.is_positive)
         return C.StrictGreaterThan(self, other, evaluate=False)
 
     def __lt__(self, other):
@@ -279,10 +282,11 @@ class Expr(Basic, EvalfMixin):
         for me in (self, other):
             if me.is_complex and me.is_real is False:
                 raise TypeError("Invalid comparison of complex %s" % me)
-        dif = self - other
-        if dif.is_negative is not None and \
-                dif.is_negative is not dif.is_nonnegative:
-            return sympify(dif.is_negative)
+        if self.is_real and other.is_real:
+            dif = self - other
+            if dif.is_negative is not None and \
+                    dif.is_negative is not dif.is_nonnegative:
+                return sympify(dif.is_negative)
         return C.StrictLessThan(self, other, evaluate=False)
 
     @staticmethod
@@ -723,7 +727,7 @@ class Expr(Basic, EvalfMixin):
         respectively.
 
         """
-        from sympy.series import limit
+        from sympy.series import limit, Limit
         if (a is None and b is None):
             raise ValueError('Both interval ends cannot be None.')
 
@@ -735,6 +739,8 @@ class Expr(Basic, EvalfMixin):
                 A = limit(self, x, a)
                 if A is S.NaN:
                     return A
+                if isinstance(A, Limit):
+                    raise NotImplementedError("Could not compute limit")
 
         if b is None:
             B = 0
@@ -742,6 +748,8 @@ class Expr(Basic, EvalfMixin):
             B = self.subs(x, b)
             if B.has(S.NaN) or B.has(S.Infinity) or B.has(S.NegativeInfinity):
                 B = limit(self, x, b)
+                if isinstance(B, Limit):
+                    raise NotImplementedError("Could not compute limit")
 
         return B - A
 

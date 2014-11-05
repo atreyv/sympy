@@ -359,10 +359,11 @@ want to be mentioned here, so see our repository history for a full list).
 #. Marcus Näslund: Fix to documentation
 #. Mridul Seth: correct is_tangent for Ellipse non-intersection
 #. Mihai A. Ionescu: Improvement to LaplaceTransform
+#. Leonid Blouvshtein: make integrals aware of both limits being +/-oo
 #. ck Lux: handle zoo, oo, nan in as_int and round
-#. leonidb: check input to Binomial
 #. Michael Gallaspy: improve handling of inequalities involving RootOf
 #. Roman Inflianskas: add svg support to preview
+#. Duane Nykamp: improved function handling in parse_expr
 
 Up-to-date list in the order of the first contribution is given in the `AUTHORS
 <https://github.com/sympy/sympy/blob/master/AUTHORS>`_ file.
