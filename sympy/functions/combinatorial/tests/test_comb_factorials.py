@@ -84,8 +84,10 @@ def test_ff_eval_apply():
 
 
 def test_factorial():
+    x = Symbol('x')
     n = Symbol('n', integer=True)
     k = Symbol('k', integer=True, positive=True)
+    r = Symbol('r', integer=False)
 
     assert factorial(-2) == zoo
     assert factorial(0) == 1
@@ -93,7 +95,10 @@ def test_factorial():
     assert factorial(n).func == factorial
     assert factorial(2*n).func == factorial
 
+    assert factorial(x).is_integer is None
     assert factorial(n).is_integer
+    assert factorial(r).is_integer is None
+
     assert factorial(n).is_positive is None
     assert factorial(k).is_positive
 
@@ -130,6 +135,35 @@ def test_factorial2():
     assert factorial2(7) == 105
     assert factorial2(8) == 384
     assert factorial2(n).func == factorial2
+
+    # The following is exhaustive
+    tt = Symbol('tt', integer=True, nonnegative=True)
+    tf = Symbol('tf', integer=True, nonnegative=False)
+    ft = Symbol('ft', integer=False, nonnegative=True)
+    ff = Symbol('ff', integer=False, nonnegative=False)
+    fn = Symbol('fn', integer=False)
+    nt = Symbol('nt', nonnegative=True)
+    nf = Symbol('nf', nonnegative=False)
+    nn = Symbol('nn')
+
+    assert factorial2(tt - 1).is_integer
+    assert factorial2(tf - 1).is_integer is False
+    assert factorial2(n).is_integer is None
+    assert factorial2(ft - 1).is_integer is False
+    assert factorial2(ff - 1).is_integer is False
+    assert factorial2(fn).is_integer is False
+    assert factorial2(nt - 1).is_integer is None
+    assert factorial2(nf - 1).is_integer is False
+    assert factorial2(nn).is_integer is None
+    assert factorial2(tt - 1).is_positive
+    assert factorial2(tf - 1).is_positive is False
+    assert factorial2(n).is_positive is None
+    assert factorial2(ft - 1).is_positive is False
+    assert factorial2(ff - 1).is_positive is False
+    assert factorial2(fn).is_positive is False
+    assert factorial2(nt - 1).is_positive is None
+    assert factorial2(nf - 1).is_positive is False
+    assert factorial2(nn).is_positive is None
 
 
 def test_binomial():
@@ -207,3 +241,22 @@ def test_subfactorial():
         [1, 0, 1, 2, 9, 44, 265, 1854, 14833, 133496]))
     raises(ValueError, lambda: subfactorial(0.1))
     raises(ValueError, lambda: subfactorial(-2))
+
+    tt = Symbol('tt', integer=True, nonnegative=True)
+    tf = Symbol('tf', integer=True, nonnegative=False)
+    tn = Symbol('tf', integer=True)
+    ft = Symbol('ft', integer=False, nonnegative=True)
+    ff = Symbol('ff', integer=False, nonnegative=False)
+    fn = Symbol('ff', integer=False)
+    nt = Symbol('nt', nonnegative=True)
+    nf = Symbol('nf', nonnegative=False)
+    nn = Symbol('nf')
+    assert subfactorial(tt).is_integer
+    assert subfactorial(tf).is_integer is False
+    assert subfactorial(tn).is_integer is None
+    assert subfactorial(ft).is_integer is False
+    assert subfactorial(ff).is_integer is False
+    assert subfactorial(fn).is_integer is False
+    assert subfactorial(nt).is_integer is None
+    assert subfactorial(nf).is_integer is False
+    assert subfactorial(nn).is_integer is None

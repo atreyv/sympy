@@ -165,7 +165,8 @@ class factorial(CombinatorialFunction):
         return C.gamma(n + 1)
 
     def _eval_is_integer(self):
-        return self.args[0].is_integer
+        if self.args[0].is_integer:
+            return True
 
     def _eval_is_positive(self):
         if self.args[0].is_integer and self.args[0].is_positive:
@@ -228,6 +229,10 @@ class subfactorial(CombinatorialFunction):
             if sympify(arg).is_Number:
                 raise ValueError("argument must be a nonnegative integer")
 
+    def _eval_is_integer(self):
+        return fuzzy_and((self.args[0].is_integer,
+                          self.args[0].is_nonnegative))
+
 
 class factorial2(CombinatorialFunction):
     """The double factorial n!!, not to be confused with (n!)!
@@ -265,6 +270,14 @@ class factorial2(CombinatorialFunction):
             if arg == S.Zero or arg == S.NegativeOne:
                 return S.One
             return factorial2(arg - 2)*arg
+
+    def _eval_is_integer(self):
+        return fuzzy_and((self.args[0].is_integer,
+                          (self.args[0] + 1).is_nonnegative))
+
+    def _eval_is_positive(self):
+        return fuzzy_and((self.args[0].is_integer,
+                          (self.args[0] + 1).is_nonnegative))
 
 
 ###############################################################################
