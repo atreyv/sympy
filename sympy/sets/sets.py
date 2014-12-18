@@ -825,6 +825,14 @@ class Interval(Set, EvalfMixin):
         # We only know how to intersect with other intervals
         if not other.is_Interval:
             return None
+
+        # handle (-oo, oo)
+        infty = S.NegativeInfinity, S.Infinity
+        if self == Interval(*infty):
+            l, r = self.left, self.right
+            if l.is_real or l in infty or r.is_real or r in infty:
+                return other
+
         # We can't intersect [0,3] with [x,6] -- we don't know if x>0 or x<0
         if not self._is_comparable(other):
             return None
@@ -917,6 +925,10 @@ class Interval(Set, EvalfMixin):
     def _contains(self, other):
         if other.is_real is False:
             return false
+
+        if self.start is S.NegativeInfinity and self.end is S.Infinity:
+            if not other.is_real is None:
+                return other.is_real
 
         if self.left_open:
             expr = other > self.start

@@ -259,6 +259,7 @@ def test_intersection():
 
     # Singleton special cases
     assert Intersection(Interval(0, 1), S.EmptySet) == S.EmptySet
+    assert Intersection(Interval(-oo, oo), Interval(-oo, x)) == Interval(-oo, x)
 
     # Products
     line = Interval(0, 5)
@@ -429,6 +430,9 @@ def test_contains():
 
     assert S.EmptySet.contains(1) is S.false
     assert FiniteSet(RootOf(x**3 + x - 1, 0)).contains(S.Infinity) is S.false
+
+    assert RootOf(x**5 + x**3 + 1, 0) in S.Reals
+    assert not RootOf(x**5 + x**3 + 1, 1) in S.Reals
 
 
 def test_interval_symbolic():

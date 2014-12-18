@@ -350,6 +350,11 @@ def test_Abs():
     assert Abs(3**(2 + I)) == 9
     assert Abs((-3)**(1 - I)) == 3*exp(pi)
 
+    assert Abs(oo) is oo
+    assert Abs(-oo) is oo
+    assert Abs(oo + I) is oo
+    assert Abs(oo + I*oo) is oo
+
 
 def test_Abs_rewrite():
     x = Symbol('x', real=True)
@@ -387,18 +392,32 @@ def test_Abs_real():
 def test_Abs_properties():
     x = Symbol('x')
     assert Abs(x).is_real is True
+    assert Abs(x).is_rational is None
     assert Abs(x).is_positive is None
     assert Abs(x).is_nonnegative is True
 
-    w = Symbol('w', complex=True, zero=False)
-    assert Abs(w).is_real is True
-    assert Abs(w).is_positive is True
-    assert Abs(w).is_zero is False
+    z = Symbol('z', complex=True, zero=False)
+    assert Abs(z).is_real is True
+    assert Abs(z).is_rational is None
+    assert Abs(z).is_positive is True
+    assert Abs(z).is_zero is False
 
-    q = Symbol('q', positive=True)
-    assert Abs(q).is_real is True
-    assert Abs(q).is_positive is True
-    assert Abs(q).is_zero is False
+    p = Symbol('p', positive=True)
+    assert Abs(p).is_real is True
+    assert Abs(p).is_rational is None
+    assert Abs(p).is_positive is True
+    assert Abs(p).is_zero is False
+
+    q = Symbol('q', rational=True)
+    assert Abs(q).is_rational is True
+    assert Abs(q).is_integer is None
+    assert Abs(q).is_positive is None
+    assert Abs(q).is_nonnegative is True
+
+    i = Symbol('i', integer=True)
+    assert Abs(i).is_integer is True
+    assert Abs(i).is_positive is None
+    assert Abs(i).is_nonnegative is True
 
 
 def test_abs():

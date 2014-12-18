@@ -8,6 +8,7 @@ from sympy.abc import a, b, c, d, f, k, m, x, y, z
 from sympy.concrete.summations import telescopic
 from sympy.utilities.pytest import XFAIL, raises
 from sympy import simplify
+from sympy.core.mod import Mod
 
 n = Symbol('n', integer=True)
 
@@ -101,6 +102,10 @@ def test_karr_convention():
     Sz = Sum(f(i), (i, a, b)).doit()
 
     assert Sz == 0
+
+    e = Piecewise((exp(-i), Mod(i, 2) > 0), (0, True))
+    s = Sum(e, (i, 0, 11))
+    assert s.n(3) == s.doit().n(3)
 
 
 def test_karr_proposition_2a():
@@ -348,6 +353,7 @@ def test_euler_maclaurin():
     check_exact(k**4 + k**2, a, b, 1, 5)
     check_exact(k**5, 2, 6, 1, 2)
     check_exact(k**5, 2, 6, 1, 3)
+    assert Sum(x-1, (x, 0, 2)).euler_maclaurin(m=30, n=30, eps=2**-15) == (0, 0)
     # Not exact
     assert Sum(k**6, (k, a, b)).euler_maclaurin(0, 2)[1] != 0
     # Numerical test
@@ -672,7 +678,7 @@ def test_issue_6274():
 
 
 def test_simplify():
-    y, t = symbols('y, t')
+    y, t, v = symbols('y, t, v')
 
     assert simplify(Sum(x*y, (x, n, m), (y, a, k)) + \
         Sum(y, (x, n, m), (y, a, k))) == Sum(x*y + y, (x, n, m), (y, a, k))
@@ -699,6 +705,10 @@ def test_simplify():
         simplify(Sum(x, (t, a, b)) + Sum(x, (t, b+1, c)) + Sum(x, (t, b+1, c)))
     assert simplify(Sum(x, (x, a, b))*Sum(x**2, (x, a, b))) == \
         Sum(x, (x, a, b)) * Sum(x**2, (x, a, b))
+    assert simplify(Sum(x, (t, a, b)) + Sum(y, (t, a, b)) + Sum(z, (t, a, b))) \
+        == Sum(x + y + z, (t, a, b))          # issue 8596
+    assert simplify(Sum(x, (t, a, b)) + Sum(y, (t, a, b)) + Sum(z, (t, a, b)) + \
+        Sum(v, (t, a, b))) == Sum(x + y + z + v, (t, a, b))  # issue 8596
 
 
 def test_change_index():

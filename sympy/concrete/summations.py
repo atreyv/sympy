@@ -297,7 +297,7 @@ class Sum(AddWithLimits,ExprWithIntLimits):
         if m:
             if b.is_Integer and a.is_Integer:
                 m = min(m, b - a + 1)
-            if not eps:
+            if not eps or f.is_polynomial(i):
                 for k in range(m):
                     s += f.subs(i, a + k)
             else:
@@ -312,7 +312,7 @@ class Sum(AddWithLimits,ExprWithIntLimits):
                 s += term
                 for k in range(1, m):
                     term = f.subs(i, a + k)
-                    if abs(term.evalf(3)) < eps:
+                    if abs(term.evalf(3)) < eps and term != 0:
                         return s, abs(term)
                     s += term
             if b - a + 1 == m:
