@@ -151,6 +151,10 @@ def test_RootOf___eval_Eq__():
     for s in sol:
         if s.is_real:
             assert Eq(r, s) is S.true
+    eq = (x**3 + x + 1)
+    assert [Eq(RootOf(eq,i), j) for i in range(3) for j in solve(eq)] == [
+        False, False, True, False, True, False, True, False, False]
+    assert Eq(RootOf(eq, 0), 1 + S.ImaginaryUnit) == False
 
 
 def test_RootOf_is_real():
@@ -223,6 +227,9 @@ def test_RootOf_evalf():
     # issue 8617
     ans = [w.n(2) for w in solve(x**3 - x - 4)]
     assert RootOf(exp(x)**3 - exp(x) - 4, 0).n(2) in ans
+
+    # make sure verification is used in case a max/min traps the "root"
+    assert str(RootOf(4*x**5 + 16*x**3 + 12*x**2 + 7, 0).n(3)) == '-0.976'
 
 
 def test_RootOf_evalf_caching_bug():

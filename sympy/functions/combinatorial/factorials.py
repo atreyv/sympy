@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-from sympy.core import S, C, sympify
+from sympy.core import S, C, sympify, Dummy
 from sympy.core.function import Function, ArgumentIndexError
 from sympy.core.logic import fuzzy_and
 from sympy.ntheory import sieve
@@ -164,13 +164,23 @@ class factorial(CombinatorialFunction):
     def _eval_rewrite_as_gamma(self, n):
         return C.gamma(n + 1)
 
+    def _eval_rewrite_as_Product(self, n):
+        if n.is_nonnegative and n.is_integer:
+            i = Dummy('i', integer=True)
+            return C.Product(i, (i, 1, n))
+
     def _eval_is_integer(self):
-        if self.args[0].is_integer:
+        if self.args[0].is_integer and self.args[0].is_nonnegative:
             return True
 
     def _eval_is_positive(self):
         if self.args[0].is_integer and self.args[0].is_nonnegative:
             return True
+
+    def _eval_is_composite(self):
+        x = self.args[0]
+        if x.is_integer:
+            return (x - 3).is_nonnegative
 
     def _eval_is_real(self):
         x = self.args[0]
@@ -195,9 +205,15 @@ class subfactorial(CombinatorialFunction):
     It can also be written as int(round(n!/exp(1))) but the recursive
     definition with caching is implemented for this function.
 
+    This function is generalized to noninteger arguments [2]_ as
+
+    .. math:: !x = \Gamma(x + 1, -1)/e
+
     References
     ==========
+
     .. [1] http://en.wikipedia.org/wiki/Subfactorial
+    .. [2] http://mathworld.wolfram.com/Subfactorial.html
 
     Examples
     ========
@@ -211,32 +227,35 @@ class subfactorial(CombinatorialFunction):
 
     See Also
     ========
-    factorial, sympy.utilities.iterables.generate_derangements
+
+    sympy.functions.combinatorial.factorials.factorial,
+    sympy.utilities.iterables.generate_derangements,
+    sympy.functions.special.gamma_functions.uppergamma
     """
 
     @classmethod
     @cacheit
     def _eval(self, n):
         if not n:
-            return 1
+            return S.One
         elif n == 1:
-            return 0
+            return S.Zero
         return (n - 1)*(self._eval(n - 1) + self._eval(n - 2))
 
     @classmethod
     def eval(cls, arg):
-        try:
-            arg = as_int(arg)
-            if arg < 0:
-                raise ValueError
-            return C.Integer(cls._eval(arg))
-        except ValueError:
-            if sympify(arg).is_Number:
-                raise ValueError("argument must be a nonnegative integer")
+        if arg.is_Number:
+            if arg.is_Integer and arg.is_nonnegative:
+                return cls._eval(arg)
+            elif arg is S.Infinity:
+                return arg
 
     def _eval_is_integer(self):
-        return fuzzy_and((self.args[0].is_integer,
-                          self.args[0].is_nonnegative))
+        if self.args[0].is_integer and self.args[0].is_nonnegative:
+            return True
+
+    def _eval_rewrite_as_uppergamma(self, arg):
+        return C.uppergamma(arg + 1, -1)/S.Exp1
 
 
 class factorial2(CombinatorialFunction):

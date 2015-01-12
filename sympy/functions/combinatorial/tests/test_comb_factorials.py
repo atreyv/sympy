@@ -1,6 +1,6 @@
 from sympy import (Symbol, symbols, factorial, factorial2, binomial,
                    rf, ff, gamma, polygamma, EulerGamma, O, pi, nan,
-                   oo, zoo, simplify, expand_func)
+                   oo, zoo, simplify, expand_func, C, S, Product)
 from sympy.functions.combinatorial.factorials import subfactorial
 from sympy.utilities.pytest import XFAIL, raises
 
@@ -91,6 +91,7 @@ def test_factorial():
     s = Symbol('s', integer=False, negative=True)
     t = Symbol('t', nonnegative=True)
     u = Symbol('u', noninteger=True)
+    v = Symbol('v', integer=True, negative=True)
 
     assert factorial(-2) == zoo
     assert factorial(0) == 1
@@ -99,19 +100,30 @@ def test_factorial():
     assert factorial(2*n).func == factorial
 
     assert factorial(x).is_integer is None
-    assert factorial(n).is_integer
+    assert factorial(n).is_integer is None
+    assert factorial(k).is_integer
     assert factorial(r).is_integer is None
 
     assert factorial(n).is_positive is None
     assert factorial(k).is_positive
 
     assert factorial(x).is_real is None
-    assert factorial(n).is_real
+    assert factorial(n).is_real is None
     assert factorial(k).is_real is True
     assert factorial(r).is_real is None
     assert factorial(s).is_real is True
     assert factorial(t).is_real is True
     assert factorial(u).is_real is True
+
+    assert factorial(x).is_composite is None
+    assert factorial(n).is_composite is None
+    assert factorial(k).is_composite is None
+    assert factorial(k + 3).is_composite is True
+    assert factorial(r).is_composite is None
+    assert factorial(s).is_composite is None
+    assert factorial(t).is_composite is None
+    assert factorial(u).is_composite is None
+    assert factorial(v).is_composite is False
 
     assert factorial(oo) == oo
 
@@ -134,8 +146,10 @@ def test_factorial_series():
 
 def test_factorial_rewrite():
     n = Symbol('n', integer=True)
+    k = Symbol('k', integer=True, nonnegative=True)
 
     assert factorial(n).rewrite(gamma) == gamma(n + 1)
+    assert str(factorial(k).rewrite(Product)) == 'Product(_i, (_i, 1, k))'
 
 
 def test_factorial2():
@@ -250,8 +264,11 @@ def test_factorial_simplify_fail():
 def test_subfactorial():
     assert all(subfactorial(i) == ans for i, ans in enumerate(
         [1, 0, 1, 2, 9, 44, 265, 1854, 14833, 133496]))
-    raises(ValueError, lambda: subfactorial(0.1))
-    raises(ValueError, lambda: subfactorial(-2))
+    assert subfactorial(oo) == oo
+
+    x = Symbol('x')
+    assert subfactorial(x).rewrite(C.uppergamma) == \
+        C.uppergamma(x + 1, -1)/S.Exp1
 
     tt = Symbol('tt', integer=True, nonnegative=True)
     tf = Symbol('tf', integer=True, nonnegative=False)
@@ -263,11 +280,11 @@ def test_subfactorial():
     nf = Symbol('nf', nonnegative=False)
     nn = Symbol('nf')
     assert subfactorial(tt).is_integer
-    assert subfactorial(tf).is_integer is False
+    assert subfactorial(tf).is_integer is None
     assert subfactorial(tn).is_integer is None
-    assert subfactorial(ft).is_integer is False
-    assert subfactorial(ff).is_integer is False
-    assert subfactorial(fn).is_integer is False
+    assert subfactorial(ft).is_integer is None
+    assert subfactorial(ff).is_integer is None
+    assert subfactorial(fn).is_integer is None
     assert subfactorial(nt).is_integer is None
-    assert subfactorial(nf).is_integer is False
+    assert subfactorial(nf).is_integer is None
     assert subfactorial(nn).is_integer is None
