@@ -2,7 +2,7 @@ from sympy import (
     Abs, And, Derivative, Dummy, Eq, Float, Function, Gt, I, Integral,
     LambertW, Lt, Matrix, Or, Piecewise, Poly, Q, Rational, S, Symbol,
     Wild, acos, asin, atan, atanh, cos, cosh, diff, erf, erfinv, erfc,
-    erfcinv, erf2, erf2inv, exp, expand, im, log, pi, re, sec, sin,
+    erfcinv, exp, im, log, pi, re, sec, sin,
     sinh, solve, solve_linear, sqrt, sstr, symbols, sympify, tan, tanh,
     root, simplify, atan2, arg, Mul, SparseMatrix, ask, Tuple, nsolve, oo)
 
@@ -1364,12 +1364,14 @@ def test_lambert_multivariate():
         -I*sqrt(-LambertW(1) + 1), sqrt(-1 + LambertW(1))]
 
     # these only give one of the solutions (see XFAIL below)
-    assert solve(x**3 - 3**x, x) == [-3/log(3)*LambertW(-log(3)/3)]
+    assert solve(x**3 - 3**x, x) == [-3/log(3)*LambertW(-log(3)/3),
+                                     -3*LambertW(-log(3)/3, -1)/log(3)]
     #     replacing 3 with 2 in the above solution gives 2
-    assert solve(x**2 - 2**x, x) == [2]
-    assert solve(-x**2 + 2**x, x) == [2]
+    assert solve(x**2 - 2**x, x) == [2, -2*LambertW(-log(2)/2, -1)/log(2)]
+    assert solve(-x**2 + 2**x, x) == [2, -2*LambertW(-log(2)/2, -1)/log(2)]
     assert solve(3**cos(x) - cos(x)**3) == [
-        acos(-3*LambertW(-log(3)/3)/log(3))]
+        acos(-3*LambertW(-log(3)/3)/log(3)),
+        acos(-3*LambertW(-log(3)/3, -1)/log(3))]
 
 
 @XFAIL

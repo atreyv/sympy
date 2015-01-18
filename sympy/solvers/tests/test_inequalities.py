@@ -1,8 +1,8 @@
 """Tests for tools for solving inequalities and systems of inequalities. """
 
-from sympy import (And, Eq, FiniteSet, Ge, Gt, im, Interval, Le, Lt, Ne, oo,
-                   Or, Q, re, S, sin, sqrt, Symbol, Union, Integral, Sum,
-                   Function, Float, Poly, PurePoly, pi, root)
+from sympy import (And, Eq, FiniteSet, Ge, Gt, Interval, Le, Lt, Ne, oo,
+                   Or, S, sin, sqrt, Symbol, Union, Integral, Sum,
+                   Function, Poly, PurePoly, pi, root)
 from sympy.solvers.inequalities import (reduce_inequalities,
                                         solve_poly_inequality as psolve,
                                         reduce_rational_inequalities,
@@ -304,11 +304,3 @@ def test_issue_8545():
     assert reduce_abs_inequality(eq, '<', x) == ans
     eq = 1 - x - sqrt((1 - x)**2)
     assert reduce_inequalities(eq < 0) == ans
-
-
-def test_issue_8783():
-    x = Symbol('x')
-    assert solve(x > -oo) == And(-oo < x, x < oo)
-    assert solve(x < oo) == And(-oo < x, x < oo)
-    assert solve(x > oo) == False
-    assert solve(x < -oo) == False
