@@ -132,6 +132,9 @@ class gamma(Function):
                     else:
                         return 2**n*sqrt(S.Pi) / coeff
 
+        if arg.is_integer and arg.is_nonpositive:
+            return S.ComplexInfinity
+
     def _eval_expand_func(self, **hints):
         arg = self.args[0]
         if arg.is_Rational:
@@ -159,6 +162,13 @@ class gamma(Function):
         x = self.args[0]
         if x.is_positive or x.is_noninteger:
             return True
+
+    def _eval_is_positive(self):
+        x = self.args[0]
+        if x.is_positive:
+            return True
+        elif x.is_noninteger:
+            return floor(x).is_even
 
     def _eval_rewrite_as_tractable(self, z):
         return C.exp(loggamma(z))
@@ -920,6 +930,10 @@ class loggamma(Function):
             return polygamma(0, self.args[0])
         else:
             raise ArgumentIndexError(self, argindex)
+
+    def _sage_(self):
+        import sage.all as sage
+        return sage.log_gamma(self.args[0]._sage_())
 
 
 def digamma(x):

@@ -673,6 +673,13 @@ class Function(Application, Expr):
         else:
             return self.func(*args)
 
+    def _sage_(self):
+        import sage.all as sage
+        fname = self.func.__name__
+        func = getattr(sage, fname)
+        args = [arg._sage_() for arg in self.args]
+        return func(*args)
+
 
 class AppliedUndef(Function):
     """
@@ -688,6 +695,12 @@ class AppliedUndef(Function):
     def _eval_as_leading_term(self, x):
         return self
 
+    def _sage_(self):
+        import sage.all as sage
+        fname = str(self.func)
+        args = [arg._sage_() for arg in self.args]
+        func = sage.function(fname, *args)
+        return func
 
 class UndefinedFunction(FunctionClass):
     """
@@ -870,11 +883,11 @@ class Derivative(Expr):
     expr.subs(Function, Symbol) is well-defined:  just structurally replace the
     function everywhere it appears in the expression.
 
-    This is actually the same notational convenience used in the Euler-Lagrange
-    method when one says F(t, f(t), f'(t)).diff(f(t)).  What is actually meant
-    is that the expression in question is represented by some F(t, u, v) at
-    u = f(t) and v = f'(t), and F(t, f(t), f'(t)).diff(f(t)) simply means
-    F(t, u, v).diff(u) at u = f(t).
+    This is the same notational convenience used in the Euler-Lagrange method
+    when one says F(t, f(t), f'(t)).diff(f(t)).  What is actually meant is
+    that the expression in question is represented by some F(t, u, v) at u =
+    f(t) and v = f'(t), and F(t, f(t), f'(t)).diff(f(t)) simply means F(t, u,
+    v).diff(u) at u = f(t).
 
     We do not allow derivatives to be taken with respect to expressions where this
     is not so well defined.  For example, we do not allow expr.diff(x*y)
@@ -910,7 +923,7 @@ class Derivative(Expr):
         >>> diff(f(x), x).diff(f(x))
         0
 
-    The same is actually true for derivatives of different orders::
+    The same is true for derivatives of different orders::
 
         >>> diff(f(x), x, 2).diff(diff(f(x), x, 1))
         0
@@ -947,6 +960,7 @@ class Derivative(Expr):
         >>> Derivative(f(g(x)), x, evaluate=True)
         Derivative(g(x), x)*Subs(Derivative(f(_xi_1), _xi_1),
                                             (_xi_1,), (g(x),))
+
     """
 
     is_Derivative = True
@@ -1014,8 +1028,10 @@ class Derivative(Expr):
 
             if i == iwas:  # didn't get an update because of bad input
                 from sympy.utilities.misc import filldedent
+                last_digit = int(str(count)[-1])
+                ordinal = 'st' if last_digit == 1 else 'nd' if last_digit == 2 else 'rd' if last_digit == 3 else 'th'
                 raise ValueError(filldedent('''
-                Can\'t calculate %s-th derivative wrt %s.''' % (count, v)))
+                Can\'t calculate %s%s derivative wrt %s.''' % (count, ordinal, v)))
 
             if all_zero and not count == 0:
                 all_zero = False
@@ -1300,6 +1316,11 @@ class Derivative(Expr):
 
     def _eval_as_leading_term(self, x):
         return self.args[0].as_leading_term(x)
+
+    def _sage_(self):
+        import sage.all as sage
+        args = [arg._sage_() for arg in self.args]
+        return sage.derivative(*args)
 
 
 class Lambda(Expr):

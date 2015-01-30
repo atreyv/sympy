@@ -418,10 +418,6 @@ class exp(ExpBase):
     def _eval_rewrite_as_tanh(self, arg):
         return (1 + C.tanh(arg/2))/(1 - C.tanh(arg/2))
 
-    def _sage_(self):
-        import sage.all as sage
-        return sage.exp(self.args[0]._sage_())
-
 
 class log(Function):
     """
@@ -552,9 +548,11 @@ class log(Function):
         return (1 - 2*(n % 2)) * x**(n + 1)/(n + 1)
 
     def _eval_expand_log(self, deep=True, **hints):
-        from sympy import unpolarify
+        from sympy import unpolarify, expand_log
         from sympy.concrete import Sum, Product
         force = hints.get('force', False)
+        if (len(self.args) == 2):
+            return expand_log(self.func(*self.args), deep=deep, force=force)
         arg = self.args[0]
         if arg.is_Integer:
             # remove perfect powers
@@ -596,6 +594,8 @@ class log(Function):
 
     def _eval_simplify(self, ratio, measure):
         from sympy.simplify.simplify import expand_log, simplify
+        if (len(self.args) == 2):
+            return simplify(self.func(*self.args), ratio=ratio, measure=measure)
         expr = self.func(simplify(self.args[0], ratio=ratio, measure=measure))
         expr = expand_log(expr, deep=True)
         return min([expr, self], key=measure)
@@ -686,8 +686,6 @@ class log(Function):
         k, l = Wild("k"), Wild("l")
         r = arg.match(k*x**l)
         if r is not None:
-            #k = r.get(r, S.One)
-            #l = r.get(l, S.Zero)
             k, l = r[k], r[l]
             if l != 0 and not l.has(x) and not k.has(x):
                 r = log(k) + l*logx  # XXX true regardless of assumptions?
@@ -713,10 +711,6 @@ class log(Function):
         if arg is S.One:
             return (self.args[0] - 1).as_leading_term(x)
         return self.func(arg)
-
-    def _sage_(self):
-        import sage.all as sage
-        return sage.log(self.args[0]._sage_())
 
 
 class LambertW(Function):

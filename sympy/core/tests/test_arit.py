@@ -14,6 +14,11 @@ a, c, x, y, z = symbols('a,c,x,y,z')
 b = Symbol("b", positive=True)
 
 
+def same_and_same_prec(a, b):
+    # stricter matching for Floats
+    return a == b and a._prec == b._prec
+
+
 def test_bug1():
     assert re(x) != x
     x.series(x, 0, 1)
@@ -1501,7 +1506,6 @@ def test_Mod():
     for i in [-3, -2, 2, 3]:
         for j in [-3, -2, 2, 3]:
             for k in range(3):
-                # print i, j, k
                 assert Mod(Mod(k, i), j) == (k % i) % j
 
     # known difference
@@ -1545,6 +1549,12 @@ def test_Mod():
     # issue 8677
     n = Symbol('n', integer=True, positive=True)
     assert (factorial(n) % n).equals(0) is not False
+
+    # symbolic with known parity
+    n = Symbol('n', even=True)
+    assert Mod(n, 2) == 0
+    n = Symbol('n', odd=True)
+    assert Mod(n, 2) == 1
 
 
 def test_Mod_is_integer():
@@ -1687,8 +1697,8 @@ def test_float_int():
         112345678901234567890123456789000192
     assert Integer(Float('123456789012345678901234567890e5', '')) == \
         12345678901234567890123456789000000
-    assert Float('123000e-2','') == Float('1230.00', '')
-    assert Float('123000e2','') == Float('12300000', '')
+    assert same_and_same_prec(Float('123000e-2',''), Float('1230.00', ''))
+    assert same_and_same_prec(Float('123000e2',''), Float('12300000', ''))
 
     assert int(1 + Rational('.9999999999999999999999999')) == 1
     assert int(pi/1e20) == 0
