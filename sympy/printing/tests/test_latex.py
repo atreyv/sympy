@@ -14,7 +14,7 @@ from sympy import (
     meijerg, oo, polar_lift, polylog, re, root, sin, sqrt, symbols,
     uppergamma, zeta, subfactorial, totient, elliptic_k, elliptic_f,
     elliptic_e, elliptic_pi, cos, tan, Wild, true, false, Equivalent, Not,
-    Contains, divisor_sigma)
+    Contains, divisor_sigma, SymmetricDifference)
 
 from sympy.abc import mu, tau
 from sympy.printing.latex import latex, translate
@@ -232,7 +232,7 @@ def test_latex_functions():
     assert latex(Min(x, y)**2) == r"\min\left(x, y\right)^{2}"
     assert latex(Max(x, 2, x**3)) == r"\max\left(2, x, x^{3}\right)"
     assert latex(Max(x, y)**2) == r"\max\left(x, y\right)^{2}"
-    assert latex(Abs(x)) == r"\left\lvert{x}\right\rvert"
+    assert latex(Abs(x)) == r"\left\|{x}\right\|"
     assert latex(re(x)) == r"\Re{x}"
     assert latex(re(x + y)) == r"\Re{x} + \Re{y}"
     assert latex(im(x)) == r"\Im{x}"
@@ -503,6 +503,11 @@ def test_latex_union():
         r"\left[0, 1\right] \cup \left[2, 3\right]"
     assert latex(Union(Interval(1, 1), Interval(2, 2), Interval(3, 4))) == \
         r"\left\{1, 2\right\} \cup \left[3, 4\right]"
+
+
+def test_latex_symmetric_difference():
+    assert latex(SymmetricDifference(Interval(2,5), Interval(4,7), \
+        evaluate = False)) == r'\left[2, 5\right] \triangle \left[4, 7\right]'
 
 
 def test_latex_Complement():
@@ -1173,7 +1178,7 @@ def test_modifiers():
     assert latex(symbols("xDot")) == r"\dot{x}"
     assert latex(symbols("xBar")) == r"\bar{x}"
     assert latex(symbols("xVec")) == r"\vec{x}"
-    assert latex(symbols("xAbs")) == r"\left\lvert{x}\right\rvert"
+    assert latex(symbols("xAbs")) == r"\left\|{x}\right\|"
     assert latex(symbols("xMag")) == r"\left\lvert{x}\right\rvert"
     assert latex(symbols("xPrM")) == r"{x}'"
     assert latex(symbols("xBM")) == r"\boldsymbol{x}"
@@ -1203,7 +1208,7 @@ def test_modifiers():
     assert latex(symbols("xDotVec")) == r"\vec{\dot{x}}"
     assert latex(symbols("xHATNorm")) == r"\left\lVert{\hat{x}}\right\rVert"
     # Check a couple big, ugly combinations
-    assert latex(symbols('xMathringBm_yCheckPRM__zbreveAbs')) == r"\boldsymbol{\mathring{x}}^{\left\lvert{\breve{z}}\right\rvert}_{{\check{y}}'}"
+    assert latex(symbols('xMathringBm_yCheckPRM__zbreveAbs')) == r"\boldsymbol{\mathring{x}}^{\left\|{\breve{z}}\right\|}_{{\check{y}}'}"
     assert latex(symbols('alphadothat_nVECDOT__tTildePrime')) == r"\hat{\dot{\alpha}}^{{\tilde{t}}'}_{\dot{\vec{n}}}"
 
 

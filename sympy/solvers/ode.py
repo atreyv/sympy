@@ -174,8 +174,8 @@ the main SymPy documentation.  Be sure to make the Sphinx documentation by
 running ``make html`` from within the doc directory to verify that the
 docstring formats correctly.
 
-If your solution method involves integrating, use :py:meth:`C.Integral()
-<sympy.core.C.Integral>` instead of
+If your solution method involves integrating, use :py:meth:`Integral()
+<sympy.integrals.integrals.Integral>` instead of
 :py:meth:`~sympy.core.expr.Expr.integrate`.  This allows the user to bypass
 hard/slow integration by using the ``_Integral`` variant of your hint.  In
 most cases, calling :py:meth:`sympy.core.basic.Basic.doit` will integrate your
@@ -235,11 +235,13 @@ from itertools import islice
 
 from sympy.core import Add, C, S, Mul, Pow, oo
 from sympy.core.compatibility import ordered, iterable, is_sequence, range
+from sympy.core.containers import Tuple
 from sympy.core.exprtools import factor_terms
+from sympy.core.expr import AtomicExpr, Expr
 from sympy.core.function import (Function, Derivative, AppliedUndef, diff,
     expand, expand_mul, Subs, _mexpand)
 from sympy.core.multidimensional import vectorize
-from sympy.core.numbers import NaN, zoo, I
+from sympy.core.numbers import NaN, zoo, I, Number
 from sympy.core.relational import Equality, Eq
 from sympy.core.symbol import Symbol, Wild, Dummy, symbols
 from sympy.core.sympify import sympify
@@ -354,7 +356,7 @@ def sub_func_doit(eq, func, new):
     reps = {}
     repu = {}
     for d in eq.atoms(Derivative):
-        u = C.Dummy('u')
+        u = Dummy('u')
         repu[u] = d.subs(func, new).doit()
         reps[d] = u
 
@@ -367,7 +369,7 @@ def get_numbered_constants(eq, num=1, start=1, prefix='C'):
     in eq already.
     """
 
-    if isinstance(eq, C.Expr):
+    if isinstance(eq, Expr):
         eq = [eq]
     elif not is_iterable(eq):
         raise ValueError("Expected Expr or iterable but got %s" % eq)
@@ -675,7 +677,7 @@ def _helper_simplify(eq, hint, match, simplify=True, **kwargs):
         sols = solvefunc(eq, func, order, match)
         free = eq.free_symbols
         cons = lambda s: s.free_symbols.difference(free)
-        if isinstance(sols, C.Expr):
+        if isinstance(sols, Expr):
             return odesimp(sols, func, order, cons(sols), hint)
         return [odesimp(s, func, order, cons(s), hint) for s in sols]
     else:
@@ -1369,17 +1371,16 @@ def classify_sysode(eq, funcs=None, **kwargs):
                 if max_order < order_:
                     max_order = order_
                     eq_no = i
-        try:
-            if func_dict[eq_no]:
-                list_func = []
-                list_func.append(func_dict[eq_no])
-                list_func.append(func)
-                func_dict[eq_no] = list_func
-        except:
+        if eq_no in func_dict:
+            list_func = []
+            list_func.append(func_dict[eq_no])
+            list_func.append(func)
+            func_dict[eq_no] = list_func
+        else:
             func_dict[eq_no] = func
         order[func] = max_order
-    matching_hints['func'] = list(func_dict.values())
-    funcs = list(func_dict.values())
+    funcs = [func_dict[i] for i in range(len(func_dict))]
+    matching_hints['func'] = funcs
     for func in funcs:
         if isinstance(func, list):
             for func_elem in func:
@@ -2526,12 +2527,12 @@ def __remove_linear_redundancies(expr, Cs):
 
     if expr.func is Equality:
         lhs, rhs = [_recursive_walk(i) for i in expr.args]
-        f = lambda i: isinstance(i, C.Number) or i in Cs
+        f = lambda i: isinstance(i, Number) or i in Cs
         if lhs.func is Symbol and lhs in Cs:
             rhs, lhs = lhs, rhs
         if lhs.func in (Add, Symbol) and rhs.func in (Add, Symbol):
-            dlhs = sift([lhs] if isinstance(lhs, C.AtomicExpr) else lhs.args, f)
-            drhs = sift([rhs] if isinstance(rhs, C.AtomicExpr) else rhs.args, f)
+            dlhs = sift([lhs] if isinstance(lhs, AtomicExpr) else lhs.args, f)
+            drhs = sift([rhs] if isinstance(rhs, AtomicExpr) else rhs.args, f)
             for i in [True, False]:
                 for hs in [dlhs, drhs]:
                     if i not in hs:
@@ -2540,7 +2541,7 @@ def __remove_linear_redundancies(expr, Cs):
             lhs = Add(*dlhs[False]) - Add(*drhs[False])
             rhs = Add(*drhs[True]) - Add(*dlhs[True])
         elif lhs.func in (Mul, Symbol) and rhs.func in (Mul, Symbol):
-            dlhs = sift([lhs] if isinstance(lhs, C.AtomicExpr) else lhs.args, f)
+            dlhs = sift([lhs] if isinstance(lhs, AtomicExpr) else lhs.args, f)
             if True in dlhs:
                 if False not in dlhs:
                     dlhs[False] = [1]
@@ -2762,7 +2763,7 @@ def constant_renumber(expr, symbolname, startnumber, endnumber):
                 constants_found[newstartnumber] = expr
                 newstartnumber += 1
             return expr
-        elif expr.is_Function or expr.is_Pow or isinstance(expr, C.Tuple):
+        elif expr.is_Function or expr.is_Pow or isinstance(expr, Tuple):
             return expr.func(
                 *[_constant_renumber(x) for x in expr.args])
         else:
