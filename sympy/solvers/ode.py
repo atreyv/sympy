@@ -1218,8 +1218,10 @@ def classify_ode(eq, func=None, dict=False, ics=None, **kwargs):
                 matching_hints[s + "_Integral"] = r
                 if undetcoeff['test']:
                     r['trialset'] = undetcoeff['trialset']
-                    matching_hints["nth_linear_constant_coeff_undetermined_"
-                        "coefficients"] = r
+                    matching_hints[
+                        "nth_linear_constant_coeff_undetermined_coefficients"
+                            ] = r
+
             # Homogeneous case: F(x) is identically 0
             else:
                 matching_hints["nth_linear_constant_coeff_homogeneous"] = r
@@ -1391,11 +1393,11 @@ def classify_sysode(eq, funcs=None, **kwargs):
         if isinstance(func, list):
             for func_elem in func:
                 if len(func_elem.args) != 1:
-                    raise ValueError("dsolve() and classify_sysode() work with"
+                    raise ValueError("dsolve() and classify_sysode() work with "
                     "functions of one variable only, not %s" % func)
         else:
             if func and len(func.args) != 1:
-                raise ValueError("dsolve() and classify_sysode() work with"
+                raise ValueError("dsolve() and classify_sysode() work with "
                 "functions of one variable only, not %s" % func)
 
     # find the order of all equation in system of odes
@@ -1500,13 +1502,18 @@ def check_linear_2eq_order1(eq, func, func_coef):
     r['a1'] = fc[0,x(t),1] ; r['a2'] = fc[1,y(t),1]
     r['b1'] = -fc[0,x(t),0]/fc[0,x(t),1] ; r['b2'] = -fc[1,x(t),0]/fc[1,y(t),1]
     r['c1'] = -fc[0,y(t),0]/fc[0,x(t),1] ; r['c2'] = -fc[1,y(t),0]/fc[1,y(t),1]
-    const = [S(0),S(0)]
+    forcing = [S(0),S(0)]
     for i in range(2):
         for j in Add.make_args(eq[i]):
-            if not j.has(t):
-                const[i] += j
-    r['d1'] = const[0]
-    r['d2'] = const[1]
+            if not j.has(x(t), y(t)):
+                forcing[i] += j
+    if not (forcing[0].has(t) or forcing[1].has(t)):
+        # We can handle homogeneous case and simple constant forcings
+        r['d1'] = forcing[0]
+        r['d2'] = forcing[1]
+    else:
+        # Issue #9244: nonhomogeneous linear systems are not supported
+        return None
 
     # Conditions to check for type 6 whose equations are Eq(diff(x(t),t), f(t)*x(t) + g(t)*y(t)) and
     # Eq(diff(y(t),t), a*[f(t) + a*h(t)]x(t) + a*[g(t) - h(t)]*y(t))
@@ -1665,6 +1672,16 @@ def check_linear_3eq_order1(eq, func, func_coef):
     r['b1'] = fc[0,x(t),0]; r['b2'] = fc[1,x(t),0]; r['b3'] = fc[2,x(t),0]
     r['c1'] = fc[0,y(t),0]; r['c2'] = fc[1,y(t),0]; r['c3'] = fc[2,y(t),0]
     r['d1'] = fc[0,z(t),0]; r['d2'] = fc[1,z(t),0]; r['d3'] = fc[2,z(t),0]
+    forcing = [S(0), S(0), S(0)]
+    for i in range(3):
+        for j in Add.make_args(eq[i]):
+            if not j.has(x(t), y(t), z(t)):
+                forcing[i] += j
+    if forcing[0].has(t) or forcing[1].has(t) or forcing[2].has(t):
+        # We can handle homogeneous case and simple constant forcings.
+        # Issue #9244: nonhomogeneous linear systems are not supported
+        return None
+
     if all(not r[k].has(t) for k in 'a1 a2 a3 b1 b2 b3 c1 c2 c3 d1 d2 d3'.split()):
         if r['c1']==r['d1']==r['d2']==0:
             return 'type1'
@@ -5572,7 +5589,7 @@ def infinitesimals(eq, func=None, order=None, hint='default', match=None):
                 if xieta:
                     return xieta
                 else:
-                    raise NotImplementedError("Infinitesimals could not be found for"
+                    raise NotImplementedError("Infinitesimals could not be found for "
                         "the given ODE")
 
             elif hint == 'default':
@@ -6374,13 +6391,18 @@ def sysode_linear_2eq_order1(match_):
     r['c'] = -fc[1,x(t),0]/fc[1,y(t),1]
     r['b'] = -fc[0,y(t),0]/fc[0,x(t),1]
     r['d'] = -fc[1,y(t),0]/fc[1,y(t),1]
-    const = [S(0),S(0)]
+    forcing = [S(0),S(0)]
     for i in range(2):
         for j in Add.make_args(eq[i]):
-            if not j.has(t):
-                const[i] += j
-    r['k1'] = const[0]
-    r['k2'] = const[1]
+            if not j.has(x(t), y(t)):
+                forcing[i] += j
+    if not (forcing[0].has(t) or forcing[1].has(t)):
+        r['k1'] = forcing[0]
+        r['k2'] = forcing[1]
+    else:
+        raise NotImplementedError("Only homogeneous problems are supported" +
+                                  " (and constant inhomogeneity)")
+
     if match_['type_of_equation'] == 'type1':
         sol = _linear_2eq_order1_type1(x, y, t, r)
     if match_['type_of_equation'] == 'type2':
@@ -7407,28 +7429,36 @@ def sysode_linear_3eq_order1(match_):
     eq = match_['eq']
     r = dict()
     t = list(list(eq[0].atoms(Derivative))[0].atoms(Symbol))[0]
-    for i in range(2):
+    for i in range(3):
         eqs = 0
         for terms in Add.make_args(eq[i]):
             eqs += terms/fc[i,func[i],1]
         eq[i] = eqs
-    # for equations Eq(diff(x(t),t), a1*x(t)+b1*y(t)+c1*z(t)+d1),
-    # Eq(diff(y(t),t), a2*x(t)+b2*y(t)+c2*z(t)+d2) and
-    # Eq(a2*diff(y(t),t,t), a3x(t)+b3*y(t)+c3*z(t)+d3)
+    # for equations:
+    #   Eq(g1*diff(x(t),t), a1*x(t)+b1*y(t)+c1*z(t)+d1),
+    #   Eq(g2*diff(y(t),t), a2*x(t)+b2*y(t)+c2*z(t)+d2), and
+    #   Eq(g3*diff(z(t),t), a3*x(t)+b3*y(t)+c3*z(t)+d3)
     r['a1'] = fc[0,x(t),0]/fc[0,x(t),1]; r['a2'] = fc[1,x(t),0]/fc[1,y(t),1];
     r['a3'] = fc[2,x(t),0]/fc[2,z(t),1]
     r['b1'] = fc[0,y(t),0]/fc[0,x(t),1]; r['b2'] = fc[1,y(t),0]/fc[1,y(t),1];
     r['b3'] = fc[2,y(t),0]/fc[2,z(t),1]
     r['c1'] = fc[0,z(t),0]/fc[0,x(t),1]; r['c2'] = fc[1,z(t),0]/fc[1,y(t),1];
     r['c3'] = fc[2,z(t),0]/fc[2,z(t),1]
-    const = [S(0), S(0), S(0)]
-    for i in range(2):
+    forcing = [S(0), S(0), S(0)]
+    for i in range(3):
         for j in Add.make_args(eq[i]):
-            if not (j.has(x(t)) or j.has(y(t))):
-                const[i] += j
-    r['d1'] = -const[0]
-    r['d2'] = -const[1]
-    r['d3'] = -const[2]
+            if not j.has(x(t), y(t), z(t)):
+                forcing[i] += j
+    if not (forcing[0].has(t) or forcing[1].has(t) or forcing[2].has(t)):
+        # We can handle homogeneous case and simple constant forcings
+        r['d1'] = -forcing[0]
+        r['d2'] = -forcing[1]
+        r['d3'] = -forcing[2]
+    else:
+        # Issue #9244: nonhomogeneous linear systems are not supported
+        raise NotImplementedError("Only homogeneous problems are supported" +
+                                  " (and constant inhomogeneity)")
+
     if match_['type_of_equation'] == 'type1':
         sol = _linear_3eq_order1_type1(x, y, z, t, r)
     if match_['type_of_equation'] == 'type2':
