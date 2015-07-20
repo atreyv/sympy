@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 from sympy.logic.boolalg import And
+from sympy.core import oo
 from sympy.core.basic import Basic
 from sympy.core.compatibility import as_int, with_metaclass, range
 from sympy.sets.sets import (Set, Interval, Intersection, EmptySet, Union,
@@ -246,8 +247,7 @@ class ImageSet(Set):
                 if soln in self.base_set:
                     return S.true
             except TypeError:
-                if soln.evalf() in self.base_set:
-                    return S.true
+                return self.base_set.contains(soln.evalf())
         return S.false
 
     @property
@@ -892,8 +892,14 @@ class ComplexPlane(Set):
         return None
 
 
-class Complex(with_metaclass(Singleton, ComplexPlane)):
+class Complexes(with_metaclass(Singleton, ComplexPlane)):
 
     def __new__(cls):
-        from sympy import oo
-        return ComplexPlane.__new__(cls, Interval(-oo, oo)*Interval(-oo, oo))
+        return ComplexPlane.__new__(cls, S.Reals*S.Reals)
+
+    def __eq__(self, other):
+        if other == ComplexPlane(S.Reals*S.Reals):
+            return True
+
+    def __hash__(self):
+        return hash(ComplexPlane(S.Reals*S.Reals))

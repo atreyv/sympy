@@ -40,7 +40,10 @@ n = Symbol('n', real=True)
 def test_invert_real():
     x = Dummy(real=True)
     n = Symbol('n')
-    assert solveset(abs(x) - n, x) == Intersection(S.Reals, FiniteSet(-n, n))
+
+    minus_n = Intersection(Interval(-oo, 0), FiniteSet(-n))
+    plus_n = Intersection(Interval(0, oo), FiniteSet(n))
+    assert solveset(abs(x) - n, x) == Union(minus_n, plus_n)
 
     n = Symbol('n', real=True)
     assert invert_real(x + 3, y, x) == (x, FiniteSet(y - 3))
@@ -57,7 +60,9 @@ def test_invert_real():
     assert invert_real(log(3*x), y, x) == (x, FiniteSet(exp(y) / 3))
     assert invert_real(log(x + 3), y, x) == (x, FiniteSet(exp(y) - 3))
 
-    assert invert_real(Abs(x), y, x) == (x, FiniteSet(-y, y))
+    minus_y = Intersection(Interval(-oo, 0), FiniteSet(-y))
+    plus_y = Intersection(Interval(0, oo), FiniteSet(y))
+    assert invert_real(Abs(x), y, x) == (x, Union(minus_y, plus_y))
 
     assert invert_real(2**x, y, x) == (x, FiniteSet(log(y)/log(2)))
     assert invert_real(2**exp(x), y, x) == (x, FiniteSet(log(log(y)/log(2))))
@@ -71,8 +76,10 @@ def test_invert_real():
 
     assert invert_real(x**31 + x, y, x) == (x**31 + x, FiniteSet(y))
 
+    y_1 = Intersection(Interval(-1, oo), FiniteSet(y - 1))
+    y_2 = Intersection(Interval(-oo, -1), FiniteSet(-y - 1))
     assert invert_real(Abs(x**31 + x + 1), y, x) == (x**31 + x,
-                                                     FiniteSet(-y - 1, y - 1))
+                                                     Union(y_1, y_2))
 
     assert invert_real(tan(x), y, x) == \
         (x, imageset(Lambda(n, n*pi + atan(y)), S.Integers))
@@ -90,6 +97,25 @@ def test_invert_real():
 
     x = Symbol('x', positive=True)
     assert invert_real(x**pi, y, x) == (x, FiniteSet(y**(1/pi)))
+
+    # Test for ``set_h`` containing information about the domain
+
+    n = Dummy('n')
+    x = Symbol('x')
+
+    h1 = Intersection(Interval(-3, oo), FiniteSet(a + b - 3),
+                      imageset(Lambda(n, -n + a - 3), Interval(-oo, 0)))
+
+    h2 = Intersection(Interval(-oo, -3), FiniteSet(-a + b - 3),
+                      imageset(Lambda(n, n - a - 3), Interval(0, oo)))
+
+    h3 = Intersection(Interval(-3, oo), FiniteSet(a - b - 3),
+                      imageset(Lambda(n, -n + a - 3), Interval(0, oo)))
+
+    h4 = Intersection(Interval(-oo, -3), FiniteSet(-a - b - 3),
+                      imageset(Lambda(n, n - a - 3), Interval(-oo, 0)))
+
+    assert invert_real(Abs(Abs(x + 3) - a) - b, 0, x) == (x, Union(h1, h2, h3, h4))
 
 
 def test_invert_complex():
@@ -587,7 +613,7 @@ def test_solveset_complex_polynomial():
 
 
 def test_sol_zero_complex():
-    assert solveset_complex(0, x) == S.Complex
+    assert solveset_complex(0, x) == S.Complexes
 
 
 def test_solveset_complex_rational():
@@ -846,17 +872,17 @@ def test_linsolve():
     # Test for different input forms
 
     M = Matrix([[1, 2, 1, 1, 7], [1, 2, 2, -1, 12], [2, 4, 0, 6, 4]])
-    system = A, b = M[:, :-1], M[:, -1]
+    system1 = A, b = M[:, :-1], M[:, -1]
     Eqns = [x1 + 2*x2 + x3 + x4 - 7, x1 + 2*x2 + 2*x3 - x4 - 12,
             2*x1 + 4*x2 + 6*x4 - 4]
 
     sol = FiniteSet((-2*x2 - 3*x4 + 2, x2, 2*x4 + 5, x4))
     assert linsolve(M, (x1, x2, x3, x4)) == sol
     assert linsolve(Eqns, (x1, x2, x3, x4)) == sol
-    assert linsolve(system, (x1, x2, x3, x4)) == sol
+    assert linsolve(system1, (x1, x2, x3, x4)) == sol
 
     # raise ValueError if no symbols are given
-    raises(ValueError, lambda: linsolve(system))
+    raises(ValueError, lambda: linsolve(system1))
 
     # raise ValueError if, A & b is not given as tuple
     raises(ValueError, lambda: linsolve(A, b, x1, x2, x3, x4))
@@ -868,10 +894,18 @@ def test_linsolve():
     a, b, c, d, e, f = symbols('a, b, c, d, e, f')
     A = Matrix([[a, b], [c, d]])
     B = Matrix([[e], [f]])
-    system = (A, B)
+    system2 = (A, B)
     sol = FiniteSet((-b*(f - c*e/a)/(a*(d - b*c/a)) + e/a,
                     (f - c*e/a)/(d - b*c/a)))
-    assert linsolve(system, [x, y]) == sol
+    assert linsolve(system2, [x, y]) == sol
+
+    # Test for Dummy Symbols issue #9667
+    x1 = Dummy('x1')
+    x2 = Dummy('x2')
+    x3 = Dummy('x3')
+    x4 = Dummy('x4')
+
+    assert linsolve(system1, x1, x2, x3, x4) == FiniteSet((-2*x2 - 3*x4 + 2, x2, 2*x4 + 5, x4))
 
 
 def test_issue_9556():
@@ -889,7 +923,7 @@ def test_issue_9611():
     y = Symbol('y')
 
     assert solveset(Eq(x - x + a, a), x) == S.Reals
-    assert solveset(Eq(y - y + a, a), y) == S.Complex
+    assert solveset(Eq(y - y + a, a), y) == S.Complexes
 
 
 def test_issue_9557():
