@@ -15,7 +15,8 @@ from sympy import (
     uppergamma, zeta, subfactorial, totient, elliptic_k, elliptic_f,
     elliptic_e, elliptic_pi, cos, tan, Wild, true, false, Equivalent, Not,
     Contains, divisor_sigma, SymmetricDifference, SeqPer, SeqFormula,
-    SeqAdd, SeqMul, fourier_series, pi)
+    SeqAdd, SeqMul, fourier_series, pi, ConditionSet, fps)
+
 
 from sympy.ntheory.factor_ import udivisor_sigma
 
@@ -543,6 +544,11 @@ def test_latex_FourierSeries():
     assert latex(fourier_series(x, (x, -pi, pi))) == latex_str
 
 
+def test_latex_FormalPowerSeries():
+    latex_str = r'x - \frac{x^{2}}{2} + \frac{x^{3}}{3} - \frac{x^{4}}{4} + \frac{x^{5}}{5} + \mathcal{O}\left(x^{6}\right)'
+    assert latex(fps(log(1 + x))) == latex_str
+
+
 def test_latex_intervals():
     a = Symbol('a', real=True)
     assert latex(Interval(0, 0)) == r"\left\{0\right\}"
@@ -595,6 +601,12 @@ def test_latex_ImageSet():
     x = Symbol('x')
     assert latex(ImageSet(Lambda(x, x**2), S.Naturals)) == \
         r"\left\{x^{2}\; |\; x \in \mathbb{N}\right\}"
+
+
+def test_latex_ConditionSet():
+    x = Symbol('x')
+    assert latex(ConditionSet(Lambda(x, Eq(x**2, 1)), S.Reals)) == \
+        r"\left\{x\; |\; x \in \mathbb{R} \wedge x^{2} = 1 \right\}"
 
 
 def test_latex_Contains():
